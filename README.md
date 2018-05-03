@@ -10,7 +10,7 @@ $ npm start or $ nodemon
 
 ```
 
-Your app should now be running on [localhost:5000](http://localhost:5000/).
+Your app should now be running on [localhost:5000](http://localhost:5000/) or find it in production at [aasma-bedouin](https://aasma-bedouin.herokuapp.com/)
 
 ## Deploying to Heroku
 
