@@ -5,7 +5,7 @@ class Food {
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.nutrition = amount;
         this.radius = 5;
-        this.dead = false;
+        this.eaten = false;
         // helper
         this.TWO_PI = Math.PI * 2;
     }
@@ -30,7 +30,7 @@ class Food {
 
     // update the food
     update(world) {
-        // calculate radious according to the ammount of nutrition (i.e. ammount of food)
+        // calculate radius according to the ammount of nutrition (i.e. ammount of food)
         var target = this.nutrition > 0 ? this.nutrition + 50 : 0;
         this.radius += (target - this.radius) / 5;
 
@@ -41,14 +41,15 @@ class Food {
         if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0)
             this.nutrition = 0;
 
-        // die 
-        if (this.radius < 5)
-            this.dead = true;
+        // got eaten
+        if (this.radius < 5){
+            this.eaten = true;
+        }
     }
 
-    // get a bite by a tribe
+    // tribe gathers food
     eatenBy(tribe) {
-        this.nutrition -= tribe.bite;
-        tribe.food += tribe.bite;
+        this.nutrition -= tribe.gather;
+        tribe.food += tribe.gather;
     }
 }

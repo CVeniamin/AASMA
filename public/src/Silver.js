@@ -5,7 +5,7 @@ class Silver {
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.value = amount;
         this.radius = 5;
-        this.dead = false;
+        this.collected = false;
         // helper
         this.TWO_PI = Math.PI * 2;
     }
@@ -43,11 +43,11 @@ class Silver {
 
         // die 
         if (this.radius < 5)
-            this.dead = true;
+            this.collected = true;
     }
 
     collectedBy(tribe) {
-        var collected = tribe.bite;
+        var collected = tribe.gather;
         this.value -= collected;
         tribe.silver += collected;
     }

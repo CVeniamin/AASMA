@@ -15,6 +15,7 @@ $(function() {
         var slider = document.getElementById(inputElement);
         var output = document.getElementById(outputElement);
         output.innerHTML = slider.value;
+        callback(slider, output);
         slider.addEventListener("input", function(event) {
             callback(slider, output);
         });
@@ -39,30 +40,45 @@ $(function() {
         population: [],
         food: [],
         silver: [],
+        ghazzu:false,
         canvas: ctx
     }
 
-    var populateDesert = function(size) {
+    var populateDesert = function(size, lookRange, influenceRange) {
         // populate the desert
         for (var i = 0; i < size; i++) {
             // random setup
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height
-                // var randomMass = MIN_MASS + (Math.random() * Math.random() * Math.random() * Math.random()) * MAX_MASS;
+            //var randomMass = MIN_MASS + (Math.random() * Math.random() * Math.random() * Math.random()) * MAX_MASS;
             var color = colors[Math.floor(Math.random() * colors.length)];
 
             // create tribe
-            var tribe = new Tribe(MIN_MASS, randomX, randomY, color);
+            var tribe = new Tribe(MIN_MASS, randomX, randomY, color, lookRange, influenceRange);
 
             // add tribe to the desert population
             desert.population.push(tribe);
         }
     };
 
+    var INFLUENCE_AREA = getValueFromElement("influenceArea", "influenceA", function(slider, output) {
+        INFLUENCE_AREA = slider.value;
+        output.innerHTML = slider.value;
+    });
+
+    var LOOK_AREA = getValueFromElement("lookArea", "lookA", function(slider, output) {
+        LOOK_AREA = slider.value;
+        output.innerHTML = slider.value;
+    });
+
+    var populationSizeOutput;
+    var populationSlider;
     var POPULATION = getValueFromElement("population", "populationSize", function(slider, output) {
-        populateDesert(slider.value - desert.population.length);
+        populateDesert(slider.value - desert.population.length, LOOK_AREA, INFLUENCE_AREA);
+        populationSlider = slider;
         POPULATION = slider.value;
         output.innerHTML = slider.value;
+        populationSizeOutput = output;
     });
 
     var FOOD_RATIO = getValueFromElement("foodRatio", "foodR", function(slider, output) {
@@ -100,8 +116,6 @@ $(function() {
         }
 
     };
-
-    populateDesert(POPULATION);
     createFood(POPULATION);
     createSilver(POPULATION);
 
@@ -109,6 +123,10 @@ $(function() {
     var time = null;
     var interval = 20;
     var steps = 0;
+    var raiding = document.getElementById("raiding");
+    raiding.addEventListener("change", function(){
+        desert.ghazzu = this.checked;
+    });
 
     // one time-step of the timeline loop
     var step = function() {
@@ -122,7 +140,7 @@ $(function() {
         for (var i in desert.food) {
             var food = desert.food[i];
 
-            if (food && !food.dead) {
+            if (food && !food.eaten) {
                 food.draw(ctx);
                 food.update(desert);
             } else {
@@ -136,7 +154,7 @@ $(function() {
         for (var i in desert.silver) {
             var silver = desert.silver[i];
 
-            if (silver && !silver.dead) {
+            if (silver && !silver.collected) {
                 silver.draw(ctx);
                 silver.update(desert);
             } else {
@@ -149,7 +167,7 @@ $(function() {
         // list of tribe that died during this time-step
         var deadList = [];
 
-        // update all the tribees
+        // update all the tribes
         for (var i in desert.population) {
             // current tribe
             var tribe = desert.population[i];
@@ -168,7 +186,7 @@ $(function() {
 
             // draw the tribe
             tribe.draw(ctx);
-
+            
             // if dead, add the tribe to the dead list
             if (tribe.dead) {
                 desert.population[i] = null;
@@ -176,9 +194,12 @@ $(function() {
             }
         }
 
-        // clean all the dead tribees from the desert population
-        for (var j in deadList)
+        // clean all the dead tribes from the desert population
+        for (var j in deadList){
             desert.population.splice(deadList[j], 1);
+            populationSizeOutput.innerHTML = desert.population.length;
+            populationSlider.value = desert.population.length;
+        }
     }
 
     // kick it off!
@@ -188,7 +209,7 @@ $(function() {
     $(canvas).mouseup(function() {
         // toggle showBehaviour when clicking
         Tribe.showBehavior = !Tribe.showBehavior;
-        $('#footer').html('click on gameboard to <b>' + (Tribe.showBehavior ? 'quit' : 'enter') + '</b> behaviour inspector');
+        $('#footer').html('click on gameboard to <b>' + (Tribe.showBehavior ? 'exit' : 'enter') + '</b> debugging');
     });
 
     // resizing the dimesions of the desert when resising the screen
@@ -213,7 +234,7 @@ $(function() {
     var restartButton = document.getElementById("restart");
     restartButton.onclick = function() {
         cleanDesert();
-        populateDesert(POPULATION);
+        populateDesert(POPULATION, LOOK_AREA, INFLUENCE_AREA);
         createFood(POPULATION);
         createSilver(POPULATION);
     }
