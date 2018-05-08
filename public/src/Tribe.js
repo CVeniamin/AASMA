@@ -99,7 +99,7 @@ class Tribe {
 
         // simulate raiding/ghazzu behavior
         if(desert.ghazzu){
-            
+
             // find nerby Tribes that are way bigger than the this Tribe
             var bigger = [];
             for (var j in neighboors) {
@@ -108,9 +108,9 @@ class Tribe {
                 }
             }
 
-            // if any, avoid it/them
+            // if any, defend it/them
             if (bigger.length){
-                this.avoid(bigger, this.lookRange);
+                this.defend(bigger, this.lookRange);
             }
 
             // find nearby Tribe that are way smaller than the this Tribe
@@ -139,19 +139,19 @@ class Tribe {
             this.cooperate(developed, desert.population);
         }
 
-        // avoid the boundaries of the desert
+        // defend the boundaries of the desert
         this.boundaries(desert);
     }
 
-    // makes the Tribe avoid a group of Tribes
-    avoid(TribeList, dist) {
-        this.avoidList = TribeList;
+    // makes the Tribe defend from a group of Tribes
+    defend(TribeList, dist) {
+        this.defendList = TribeList;
 
         for (var i in TribeList) {
             var d = this.location.dist(TribeList[i].location)
             if (d < dist) {
-                var avoid = TribeList[i].location.copy().sub(this.location).mul(-100);
-                this.applyForce(avoid);
+                var defend = TribeList[i].location.copy().sub(this.location).mul(-dist);
+                this.applyForce(defend);
             }
         }
 
@@ -167,8 +167,15 @@ class Tribe {
         var that = this;
 
         this.chase(TribeList, function(Tribe) {
-            that.food += Tribe.food;
-            Tribe.food = 0;
+            that.food += 5;
+            Tribe.food -= 5;
+            that.water += 1;
+            Tribe.water -= 1;
+            that.silver += 1;
+            Tribe.silver -= 1;
+
+            var attack = Tribe.location.copy().sub(that.location).mul(that.lookRange / 10); 
+            that.applyForce(attack);
         });
 
         if (Tribe.showBehavior){
@@ -205,16 +212,15 @@ class Tribe {
 
         var that = this;
 
-        this.chase(TribeList, function(Tribe) {
+        this.chase(TribeList, function(tribe) {
 
-            // set both Tribes unable to cooperate till reaching next fertility threashold
             that.developed = false;
-            Tribe.developed = false;
+            tribe.developed = false;
 
             // DNA of the offspring
-            var location = that.location.copy().lerp(Tribe.location, .5);
-            var mass = (that.mass + Tribe.mass) / 2;
-            var color = Color.interpolate(that.hue, Tribe.hue);
+            var location = that.location.copy().lerp(tribe.location, .5);
+            var mass = (that.mass + tribe.mass) / 2;
+            var color = Color.interpolate(that.hue, tribe.hue);
 
             // mutation
             var mutation_rate = .01;
@@ -222,7 +228,7 @@ class Tribe {
             color = Math.random() < mutation_rate ? Math.random() : color;
 
             // create offspring
-            var offspring = new Tribe(mass, location.x, location.y, color, that.lookRange, that.influenceRange);
+            var offspring = new Tribe(2, location.x, location.y, color, that.lookRange, that.influenceRange);
 
             // add to desert population
             desertPopulation.push(offspring);
@@ -232,7 +238,7 @@ class Tribe {
             this.color = "pink";
     }
 
-    // avoid boundaries of the screen
+    // defend boundaries of the screen
     boundaries(desert) {
         if (this.location.x < 50)
             this.applyForce(new Vector(this.maxforce * 3, 0));
@@ -415,8 +421,9 @@ class Tribe {
         if (this.food < 0)
             this.color = "black";
 
-        if (Tribe.showBehavior && this.developed)
+        if (Tribe.showBehavior && this.developed){
             this.color = "pink";
+        }
 
         // draw the Tribe on the canvas
         ctx.lineWidth = 2;
@@ -461,14 +468,14 @@ class Tribe {
             var old = ctx.globalAlpha;
             ctx.globalAlpha = .2;
 
-            // draw avoid behaviour
-            if (this.avoidList && this.avoidList.length) {
+            // draw defend behaviour
+            if (this.defendList && this.defendList.length) {
                 ctx.strokeStyle = "blue";
                 ctx.lineWidth = 4;
                 ctx.beginPath();
-                for (var i in this.avoidList) {
+                for (var i in this.defendList) {
                     ctx.moveTo(this.location.x, this.location.y);
-                    ctx.lineTo(this.avoidList[i].location.x, this.avoidList[i].location.y);
+                    ctx.lineTo(this.defendList[i].location.x, this.defendList[i].location.y);
                 }
                 ctx.stroke();
             }
@@ -510,7 +517,7 @@ class Tribe {
             }
 
             // clear the lists
-            this.avoidList = null;
+            this.defendList = null;
             this.attackList = null;
             this.unitedList = null;
             this.cooperationList = null;
@@ -537,7 +544,9 @@ class Tribe {
         this.mass = (this.food + this.silver + this.water) / 3;
 
         // spend food
-        this.food -= ((this.acceleration.mag() * this.mass / 10) * this.age * this.velocity.mag()) / 100;
+        // this.food -= ((this.acceleration.mag() * (Math.exp(this.mass / 50))) * this.age * this.velocity.mag()) / 100;
+        this.food -= this.mass / 1000;
+        this.silver -= 0.0005;
 
         // die
         if (this.food < 0) {
@@ -545,8 +554,12 @@ class Tribe {
         }
 
         // grow older
-        this.age *= 1.00005;
-        this.developed = this.age > 5;
+        this.age *= 1.0005;
+        this.developed = (this.age > 1.5 || this.mass == 40);
+
+        if(this.developed){
+            this.age = 1;
+        }
 
         // reset acceleration
         this.acceleration.mul(0);
