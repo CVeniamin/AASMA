@@ -1,20 +1,12 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <% include ../partials/header.ejs %>
-</head>
-
-<body>
-
-    <% include ../partials/nav.ejs %>
-
-    <body>
-        <div class="container">
+	<head>
+		<% include ../partials/header.ejs %>
+	</head>
+	<body>
+        <div class="container-fluid mt-3">
             <div class="row">
-                <div class="col-12"><br></div>
-            </div>
-            <div class="row">
-                <div class="col-lg-3">
+                <div class="col-lg-2">
                     <button type="reset" class="btn btn-secondary" id="restart">Restart</button>
                     <p>Number of Tribes: <span id="populationSize"></span></p>
                     <div class="slidecontainer">
@@ -38,23 +30,31 @@
                         <input id="influenceArea" class="slider" type="range" min="25" max="250" value="75" step="10" />
                     </div>
                 </div>
-                <div class="col-lg-9">
+                <div class="col-lg-3">
+					<span>Real-time statistics go here</span>
+				</div>
+                <div class="col-lg-7 text-center">
                     <span id="footer">click on gameboard to <b>enter</b>  debugging</span>
-                    <canvas id="canvas"></canvas>
+                    <canvas id="canvas" class="d-block"></canvas>
                 </div>
             </div>
         </div>
-        <!-- Optional JavaScript -->
+
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-        <script src="libs/jquery.js"></script>
-        <script src="src/Vector.js"></script>
-        <script src="src/Food.js"></script>
-        <script src="src/Silver.js"></script>
-        <script src="src/Tribe.js"></script>
-        <script src="src/Desert.js"></script>
-        <script src="src/utils.js"></script>  
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="  "></script>
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+        <!-- Browserify bundle -->
+		<script src="js/bundle.js"></script>
+
+        <!-- Custom JavaScript -->
+        <script src="js/init.js"></script>
+        <script src="js/Vector.js"></script>
+        <script src="js/Food.js"></script>
+        <script src="js/Silver.js"></script>
+        <script src="js/Tribe.js"></script>
+        <script src="js/Desert.js"></script>
+        <script src="js/utils.js"></script>
     </body>
 </html>

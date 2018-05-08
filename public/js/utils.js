@@ -1,4 +1,4 @@
-class Color{
+class Color {
     // Color Utilities
     static hex2rgb(h) {
         var hex = h.toString().substr(1);

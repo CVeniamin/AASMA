@@ -551,6 +551,7 @@ class Tribe {
         // die
         if (this.food < 0) {
             this.dead = true;
+			this.trigger('death');
         }
 
         // grow older
@@ -581,3 +582,6 @@ class Tribe {
 Tribe.showBehavior = false;
 
 Tribe.random = Math.random();
+
+// Inherit Concert event manager
+require('underscore').extend(Tribe.prototype, require('concert'));
