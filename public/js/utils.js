@@ -119,7 +119,9 @@ class Color {
 
     static difference(colorA, colorB) {
     
-        if (!colorA || !colorB) return;
+        if (!colorA || !colorB){
+	        return 0;
+        }
         
         colorA = this.hex2rgb(colorA);
         colorB = this.hex2rgb(colorB);
@@ -127,5 +129,9 @@ class Color {
         var perc1 = Math.round((colorA.r / 255  + colorA.g / 255 + colorA.b / 255) / 3);
         var perc2 = Math.round((colorB.r / 255  + colorB.g / 255 + colorB.b / 255) / 3);
         return Math.abs(perc1 - perc2);
+    }
+
+    static hueDifference(hueA, hueB){
+	    return Math.abs(hueA - hueB);
     }
 }

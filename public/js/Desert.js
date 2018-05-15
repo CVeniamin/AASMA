@@ -26,7 +26,7 @@ $(function() {
 
     var MIN_MASS = .5;
     var MAX_MASS = 3.5;
-    var SILVER_RATIO = .1;
+    var SILVER_RATIO = 0.2;
     var SCREEN = 1;
     var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
 
@@ -43,6 +43,7 @@ $(function() {
         silver: [],
         water: [],
         ghazzu: false,
+        trading: false,
         canvas: ctx
     };
 
@@ -147,6 +148,11 @@ $(function() {
         desert.ghazzu = this.checked;
     });
 
+	var trading = document.getElementById("trading");
+	trading.addEventListener("change", function(){
+		desert.trading = this.checked;
+	});
+
     // one time-step of the timeline loop
     var step = function() {
         // clear the screen (with a fade)
@@ -232,7 +238,7 @@ $(function() {
             populationSizeOutput.innerHTML = desert.population.length;
             populationSlider.value = desert.population.length;
         }
-    }
+    };
 
     // kick it off!
     setInterval(step, interval);
@@ -244,7 +250,7 @@ $(function() {
         $('#footer').html('click on gameboard to <b>' + (Tribe.showBehavior ? 'exit' : 'enter') + '</b> debugging');
     });
 
-    // resizing the dimesions of the desert when resising the screen
+    // resizing the dimensions of the desert when resizing the screen
     $(window).resize(function() {
         // resize desert
         // desert.width = $(window).width() * SCREEN;

@@ -40,6 +40,8 @@ class Tribe {
         this.age = 1;
         this.developed = false;
         this.gather = this.mass * GATHER_POWER;
+        this.friends = [];
+        this.enemies = [];
         // helper
         this.HALF_PI = Math.PI * .5;
     }
@@ -97,17 +99,16 @@ class Tribe {
                 }
             }
         }
-
+	    this.friends = [];
         // find nearby Tribes that aren't too big or too small
-        var friends = [];
         for (var j in neighbors) {
             if (neighbors[j].mass < this.mass * 2 && neighbors[j].mass > this.mass / 2)
-                friends.push(neighbors[j]);
+                this.friends.push(neighbors[j]);
         }
 
         // if any, unite with them
-        if (friends.length){
-            this.unite(friends);
+        if (this.friends.length){
+            this.unite(this.friends);
         } else {
             // if nobody is nearby, wander around
             this.wander(200);
@@ -116,48 +117,57 @@ class Tribe {
         // simulate raiding/ghazzu behavior
         if(desert.ghazzu){
 
-            // find nearby Tribes that are way bigger than the this Tribe
-            var bigger = [];
+            // find nearby Tribes that are bigger than the this Tribe
+            var strong = [];
             for (var j in neighbors) {
                 if (neighbors[j].mass > this.mass * 2){
-                    bigger.push(neighbors[j]);
+                    strong.push(neighbors[j]);
                 }
             }
 
             // if any, defend it/them
-            if (bigger.length){
-                this.defend(bigger, this.lookRange);
+            if (strong.length){
+                this.defend(strong, this.lookRange);
             }
 
-            // find nearby Tribe that are way smaller than the this Tribe
-            var smaller = [];
+            // find nearby Tribe that are smaller than the this Tribe and of different hue
+            var weak = [];
             for (var j in neighbors) {
-                if (neighbors[j].mass < this.mass / 2)
-                    smaller.push(neighbors[j]);
+	            var neighbor = neighbors[j];
+                if (neighbor.mass < this.mass / 2 && Color.hueDifference(neighbor.hue, this.hue) > 0.3){
+                    var friend = false;
+                    for (var i in this.friends){
+	                    if(this.friends[i].id === neighbor.id){
+                            friend = true;
+                        }
+                    }
+                    if(!friend){
+                        weak.push(neighbor);
+                    }
+                }
             }
 
-            // if any, attack a smaller tribe
-            if (smaller.length){
-                this.attack(smaller);
+            // if any, attack a weak tribe
+            if (weak.length){
+                this.attack(weak);
             }
         }
-
+        if (desert.trade){
+	        // cooperate with it/them
+	        this.cooperate(this.friends);
+        }
         // TODO cooperation between developed tribes or similar colors
 	    // if the Tribe is developed enough...
-	    /*if (this.developed) {
+	    // if (this.developed) {
 			// find nearby developed Tribes
-			var developed = [];
-			for (var j in neighbors){
-				if (neighbors[j].developed){
-					developed.push(neighbors[j]);
+			var cooperate = [];
+			for (var j in this.friends){
+				if (Color.hueDifference(this.friends[j].hue, this.hue) < 0.3){
+					cooperate.push(this.friends[j]);
 				}
 			}
-
-			//this.divide(desert.population);
-
-			// cooperate with it/them
-			//this.cooperate(developed, desert.population);
-		}*/
+			this.divide(desert.population);
+		// }
 
         // defend the boundaries of the desert
         this.boundaries(desert);
@@ -186,18 +196,31 @@ class Tribe {
 
         var that = this;
 
-        this.chase(TribeList, function(Tribe) {
-            that.food += 5;
-            Tribe.food -= 5;
-            that.water += 1;
-            Tribe.water -= 1;
-            that.silver += 1;
-            Tribe.silver -= 1;
+        this.chase(TribeList, function(tribe) {
+            // Attacking other tribe incurs in a penalty cost
+            var cost = 100;
+            var stronger = that.silver < tribe.silver;
 
-            var attack = Tribe.location.copy().sub(that.location).mul(that.lookRange / 10); 
+            if (stronger){
+                // bad idea attacking a stronger tribe
+	            that.food -= 5 / cost;
+	            that.water -= 5 / cost;
+	            that.silver -= 1 / cost;
+            }
+
+            // in combat spend resources
+	        that.food -= 5 / cost;
+	        tribe.food -= 5 / cost;
+	        that.water -= 5 / cost;
+	        tribe.water -= 5 / cost;
+
+	        // loose silver to create ammo
+            that.silver -= 5 / cost;
+            tribe.silver -= 5 / cost;
+
+            var attack = tribe.location.copy().sub(that.location).mul(that.lookRange / 10);
             that.applyForce(attack);
         });
-
         if (Tribe.showBehavior){
             this.color = "red";
         }
@@ -222,22 +245,44 @@ class Tribe {
         this.applyForce(alignment);
         this.applyForce(cohesion);
 
-        if (Tribe.showBehavior)
-            this.color = "black";
+        if (Tribe.showBehavior){
+	        this.color = "black";
+        }
     }
 
     // makes the Tribe chase a developed Tribe or a group of developed Tribes, and cooperate with it/them
-    cooperate(TribeList, desertPopulation) {
+    cooperate(TribeList) {
         this.cooperationList = TribeList;
 
         var that = this;
 
-        this.chase(TribeList, function(tribe) {
-            // TODO 
-        }, 400);
+        this.trade(TribeList, function(tribe) {
+            var trade = 1 / 10;
+            // "fake" trade of food with water
+            if (that.food < tribe.food && that.water > tribe.water) {
+                // water more valuable
+	            that.food += trade * 5;
+	            tribe.food -= trade * 5;
+	            that.water -= trade;
+	            tribe.water += trade;
+            }
+            else if (that.silver < tribe.silver && that.water > tribe.water){
+	            that.silver += trade * 2;
+	            tribe.silver -= trade * 2;
+	            that.water -= trade;
+	            tribe.water += trade;
+            }
+            else if (that.food < tribe.food && that.silver > tribe.silver){
+	            that.food += trade * 3;
+	            tribe.food -= trade * 3;
+	            that.silver -= trade;
+	            tribe.silver += trade;
+            }
+        });
 
-        if (Tribe.showBehavior)
-            this.color = "pink";
+        if (Tribe.showBehavior){
+	        this.color = "pink";
+        }
     }
 
     divide(desertPopulation){
@@ -318,15 +363,29 @@ class Tribe {
 
     // chase behaviour - makes the Tribe chase a group of other Tribes
     chase(TribeList, action, force) {
-        if (TribeList.length == 0)
-            return;
+        if (TribeList.length === 0){
+	        return;
+        }
 
         for (var i in TribeList) {
             this.applyForce(TribeList[i].attract(this, force || 50));
-            if (this.location.dist(TribeList[i].location) < (this.length + TribeList[i].length) / 2)
-                action(TribeList[i]); // <- execute action when reaching a Tribe
+            if (this.location.dist(TribeList[i].location) < this.lookRange){
+	            action(TribeList[i]); // <- execute action when reaching a Tribe
+            }
         }
     }
+
+	trade(TribeList, action) {
+		if (TribeList.length === 0){
+			return;
+		}
+
+		for (var i in TribeList) {
+			if (this.location.dist(TribeList[i].location) < this.lookRange){
+				action(TribeList[i]); // <- execute action when reaching a Tribe
+			}
+		}
+	}
 
     // given a target vector, return a vector that would steer the Tribe in that direction
     seek(target) {
@@ -411,10 +470,10 @@ class Tribe {
     affinity(TribeList) {
         var coef = 0;
         for (var i in TribeList) {
-            //var difference = Math.abs(TribeList[i].hue - this.hue);
-            var difference = Color.difference(TribeList[i].color, this.color);// * Math.abs(TribeList[i].hue - this.hue);
-            if (difference > .5)
-                difference = 1 - difference;
+            var difference = Color.hueDifference(TribeList[i].hue, this.hue);
+            if (difference > .5){
+	            difference = 1 - difference;
+            }
             coef += difference
         }
         var affinity = 1 - (coef / TribeList.length);
@@ -443,8 +502,9 @@ class Tribe {
         // draw the behaviour of the Tribe (lines)
         this.drawBehavior(ctx);
 
-        if (this.food < 0)
-            this.color = "black";
+        if (this.food < 0){
+	        this.color = "black";
+        }
 
         if (Tribe.showBehavior && this.developed){
             this.color = "pink";
@@ -458,7 +518,7 @@ class Tribe {
         ctx.moveTo(x1, y1);
         /* ctx.quadraticCurveTo(x2, y2, x, y);
         ctx.quadraticCurveTo(x3, y3, x1, y1); */
-        var radiusX = (this.mass + this.food + this.length) * 1 / 3;
+        var radiusX = (this.mass + this.food +  this.water + this.silver + this.length) * 1 / 5;
         var radiusY = radiusX;
         var rotation = 45 * Math.PI / 180;
         ctx.ellipse(x1, y1, radiusX, radiusY, rotation, 0, 2 * Math.PI);
@@ -571,17 +631,24 @@ class Tribe {
         // spend food
         // this.food -= ((this.acceleration.mag() * (Math.exp(this.mass / 50))) * this.age * this.velocity.mag()) / 100;
         this.food -= this.mass / 1000;
+        this.water -= this.mass / 1000;
         this.silver -= 0.0005;
 
+
+        // silver can't have negative values
+        if (this.silver < 0 ){
+            this.silver = 0;
+        }
+
         // die
-        if (this.food < 0) {
+        if (this.food < 0 || this.water < 0) {
             this.dead = true;
-			this.trigger('death');
+			// this.trigger('death');
         }
 
         // grow older
         this.age *= 1.0005;
-        this.developed = (this.age > 1.5 || this.mass == 40);
+        this.developed = (this.age > 3 || this.mass === 70);
 
         if(this.developed){
             this.age = 1;
