@@ -32,9 +32,10 @@ class Tribe {
         this.velocity = new Vector(0, 0);
         this.acceleration = new Vector(0, 0);
         this.wandering = new Vector(.2, .2);
-        this.hue = Math.random() < .5 ? Math.random() * .5 : 1 - Math.random() * .5; // <- the hue is used for color generation and cooperation
-        this.color = color;
+	    this.hue = Math.random() < .5 ? Math.random() * .5 : 1 - Math.random() * .5; // <- the hue is used for color generation and cooperation
+	    this.color = Color.hue2hex(this.hue);
         this.auxColor = this.color;
+        // this.hue = Math.random() < .5 ? Color.hex2hsv(this.color).h * .5 : 1 -  Color.hex2hsv(this.color).h * .5; // <- the hue is used for color generation and cooperation
         this.dead = false;
         this.age = 1;
         this.developed = false;
@@ -43,11 +44,26 @@ class Tribe {
         this.HALF_PI = Math.PI * .5;
     }
 
-    // computes all the information from the enviroment and decides in which direction travel
+    // computes all the information from the environment and decides in which direction travel
     travel(desert) {
         // surrounding Tribes
-        var neighboors = this.look(desert.population, this.lookRange, Math.PI * 2);
+        var neighbors = this.look(desert.population, this.lookRange, Math.PI * 2);
 
+	    var nearbyWater = this.look(desert.water, this.influenceRange, Math.PI * 2);
+
+	    // collect water
+	    for (var index in nearbyWater) {
+		    var water = nearbyWater[index];
+		    if (water && !water.collected) {
+			    // go to the silver
+			    this.follow(water.location, water.radius / 10);
+
+			    // if close enough...
+			    if (this.location.dist(water.location) < water.radius) {
+				    water.collectedBy(this);
+			    }
+		    }
+	    }
         // nearby food
         var nearbyFood = this.look(desert.food, this.influenceRange, Math.PI * 2);
 
@@ -84,9 +100,9 @@ class Tribe {
 
         // find nearby Tribes that aren't too big or too small
         var friends = [];
-        for (var j in neighboors) {
-            if (neighboors[j].mass < this.mass * 2 && neighboors[j].mass > this.mass / 2)
-                friends.push(neighboors[j]);
+        for (var j in neighbors) {
+            if (neighbors[j].mass < this.mass * 2 && neighbors[j].mass > this.mass / 2)
+                friends.push(neighbors[j]);
         }
 
         // if any, unite with them
@@ -100,11 +116,11 @@ class Tribe {
         // simulate raiding/ghazzu behavior
         if(desert.ghazzu){
 
-            // find nerby Tribes that are way bigger than the this Tribe
+            // find nearby Tribes that are way bigger than the this Tribe
             var bigger = [];
-            for (var j in neighboors) {
-                if (neighboors[j].mass > this.mass * 2){
-                    bigger.push(neighboors[j]);
+            for (var j in neighbors) {
+                if (neighbors[j].mass > this.mass * 2){
+                    bigger.push(neighbors[j]);
                 }
             }
 
@@ -115,9 +131,9 @@ class Tribe {
 
             // find nearby Tribe that are way smaller than the this Tribe
             var smaller = [];
-            for (var j in neighboors) {
-                if (neighboors[j].mass < this.mass / 2)
-                    smaller.push(neighboors[j]);
+            for (var j in neighbors) {
+                if (neighbors[j].mass < this.mass / 2)
+                    smaller.push(neighbors[j]);
             }
 
             // if any, attack a smaller tribe
@@ -126,18 +142,22 @@ class Tribe {
             }
         }
 
-        // if the Tribe is developed enough...
-        if (this.developed) {
-            // find nearby developed Tribes
-            var developed = [];
-            for (var j in neighboors){
-                if (neighboors[j].developed){
-                    developed.push(neighboors[j]);
-                }
-            }
-            // cooperate with it/them
-            this.cooperate(developed, desert.population);
-        }
+        // TODO cooperation between developed tribes or similar colors
+	    // if the Tribe is developed enough...
+	    /*if (this.developed) {
+			// find nearby developed Tribes
+			var developed = [];
+			for (var j in neighbors){
+				if (neighbors[j].developed){
+					developed.push(neighbors[j]);
+				}
+			}
+
+			//this.divide(desert.population);
+
+			// cooperate with it/them
+			//this.cooperate(developed, desert.population);
+		}*/
 
         // defend the boundaries of the desert
         this.boundaries(desert);
@@ -193,9 +213,9 @@ class Tribe {
         var affinity = this.affinity(TribeList);
 
         //Tribes of very different colors won't stay together as tightly as Tribes of the same color
-        separation.mul(1.2);
-        alignment.mul(1.2 * affinity);
-        cohesion.mul(1 * affinity);
+        separation.mul(2);
+        alignment.mul(0.7 * affinity);
+        cohesion.mul(0.5 * affinity);
 
         // apply forces
         this.applyForce(separation);
@@ -213,29 +233,33 @@ class Tribe {
         var that = this;
 
         this.chase(TribeList, function(tribe) {
-
-            that.developed = false;
-            tribe.developed = false;
-
-            // DNA of the offspring
-            var location = that.location.copy().lerp(tribe.location, .5);
-            var mass = (that.mass + tribe.mass) / 2;
-            var color = Color.interpolate(that.hue, tribe.hue);
-
-            // mutation
-            var mutation_rate = .01;
-            mass += Math.random() < mutation_rate ? Math.random() * 2 - 1 : 0;
-            color = Math.random() < mutation_rate ? Math.random() : color;
-
-            // create offspring
-            var offspring = new Tribe(2, location.x, location.y, color, that.lookRange, that.influenceRange);
-
-            // add to desert population
-            desertPopulation.push(offspring);
+            // TODO 
         }, 400);
 
         if (Tribe.showBehavior)
             this.color = "pink";
+    }
+
+    divide(desertPopulation){
+
+        if (this.developed){
+            
+            this.developed = false;
+            var location = this.location.copy();
+            var mass = this.mass / 10;
+            this.mass /=  2;
+            this.food /= 2;
+            this.silver /= 2;
+            var color = this.color;
+
+            // mutation
+            var mutation_rate = .01;
+            // mass += Math.random() < mutation_rate ? Math.random() * 2 - 1 : 0;
+            color = Math.random() < mutation_rate ? Math.random() : color;
+
+            // add to desert population
+            desertPopulation.push(new Tribe(mass, location.x, location.y, color, this.lookRange, this.influenceRange));
+        }
     }
 
     // defend boundaries of the screen
@@ -255,20 +279,20 @@ class Tribe {
 
     // return an array of the nearby Tribe that are ahead
     look(TribeList, radius, angle) {
-        var neighboors = [];
+        var neighbors = [];
         for (var i in TribeList)
             if (TribeList[i] != null && TribeList[i] != this) {
                 var diff = this.location.copy().sub(TribeList[i].location);
                 var a = this.velocity.angleBetween(diff);
                 var d = this.location.dist(TribeList[i].location);
                 if (d < radius && (a < angle / 2 || a > Math.PI * 2 - angle / 2))
-                    neighboors.push(TribeList[i]);
+                    neighbors.push(TribeList[i]);
             }
 
-        return neighboors;
+        return neighbors;
     }
 
-    // wander behaviour (when the Tribe is alone, i.e. it can't see other neighboors around)
+    // wander behaviour (when the Tribe is alone, i.e. it can't see other neighbors around)
     wander(radius) {
         if (Math.random() < .05) {
             this.wandering.rotate(Math.PI * 2 * Math.random());
@@ -279,7 +303,7 @@ class Tribe {
             this.color = "gray";
     }
 
-    // makes the Tribe folow a target (vector)
+    // makes the Tribe follow a target (vector)
     follow(target, arrive) {
         var dest = target.copy().sub(this.location);
         var d = dest.dist(this.location);
@@ -292,7 +316,7 @@ class Tribe {
         this.applyForce(dest.limit(this.maxforce * 2));
     }
 
-    // chase behaviour - makes the Tribe chase a group of other Tribees
+    // chase behaviour - makes the Tribe chase a group of other Tribes
     chase(TribeList, action, force) {
         if (TribeList.length == 0)
             return;
@@ -326,21 +350,21 @@ class Tribe {
         return force;
     }
 
-    // makes the Tribe separate from the surrounding Tribees
-    separate(neighboors, range) {
+    // makes the Tribe separate from the surrounding Tribes
+    separate(neighbors, range) {
         var sum = new Vector(0, 0);
 
-        if (neighboors.length) {
-            for (var i in neighboors) {
-                var d = this.location.dist(neighboors[i].location)
+        if (neighbors.length) {
+            for (var i in neighbors) {
+                var d = this.location.dist(neighbors[i].location)
                 if (d < range) {
-                    var diff = this.location.copy().sub(neighboors[i].location);
+                    var diff = this.location.copy().sub(neighbors[i].location);
                     diff.normalize();
                     diff.div(d);
                     sum.add(diff);
                 }
             }
-            sum.div(neighboors.length);
+            sum.div(neighbors.length);
             sum.normalize();
             sum.mul(this.maxspeed);
             sum.sub(this.velocity)
@@ -350,15 +374,15 @@ class Tribe {
         return sum;
     }
 
-    // aligns the Tribe to the surrounding Tribees
-    align(neighboors) {
+    // aligns the Tribe to the surrounding Tribes
+    align(neighbors) {
         var sum = new Vector(0, 0);
 
-        if (neighboors.length) {
-            for (var i in neighboors) {
-                sum.add(neighboors[i].velocity);
+        if (neighbors.length) {
+            for (var i in neighbors) {
+                sum.add(neighbors[i].velocity);
             }
-            sum.div(neighboors.length);
+            sum.div(neighbors.length);
             sum.normalize();
             sum.mul(this.maxspeed);
 
@@ -369,25 +393,26 @@ class Tribe {
     }
 
     // moves the Tribe towards the center of the surrounding Tribes
-    cohesion(neighboors) {
+    cohesion(neighbors) {
         var sum = new Vector(0, 0);
 
-        if (neighboors.length) {
-            for (var i in neighboors) {
-                sum.add(neighboors[i].location);
+        if (neighbors.length) {
+            for (var i in neighbors) {
+                sum.add(neighbors[i].location);
             }
-            sum.div(neighboors.length);
+            sum.div(neighbors.length);
             return this.seek(sum);
         }
 
         return sum;
     }
 
-    // return a coeficient represanting the color affinity in a group of neighboor Tribes
+    // return a coefficient representing the color affinity in a group of neighbor Tribes
     affinity(TribeList) {
         var coef = 0;
         for (var i in TribeList) {
-            var difference = Math.abs(TribeList[i].hue - this.hue);
+            //var difference = Math.abs(TribeList[i].hue - this.hue);
+            var difference = Color.difference(TribeList[i].color, this.color);// * Math.abs(TribeList[i].hue - this.hue);
             if (difference > .5)
                 difference = 1 - difference;
             coef += difference

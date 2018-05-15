@@ -30,14 +30,14 @@ class Food {
 
     // update the food
     update(world) {
-        // calculate radius according to the ammount of nutrition (i.e. ammount of food)
+        // calculate radius according to the amount of nutrition (i.e. amount of food)
         var target = this.nutrition > 0 ? this.nutrition + 50 : 0;
         this.radius += (target - this.radius) / 5;
 
         // move food
         // this.location.add(this.velocity);
 
-        // if food goes out of the boundaries of the sea, kill it
+        // if food goes out of the boundaries of the desert, remove it
         if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0)
             this.nutrition = 0;
 

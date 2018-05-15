@@ -4,7 +4,8 @@ $(function() {
         FOOD_COLOR = "#00FF00",
         FOOD_SIZE = 16,
         SILVER_COLOR = "#C0C0C0",
-        WATER_COLOR = "#0077BE",
+        WATER_COLOR = "#74ccf4",
+	    WATER_RATIO = 0.15,
         WIDTH = 1150,
         HEIGHT = 730,
         WALL_SIZE = 20,
@@ -34,15 +35,16 @@ $(function() {
     var ctx = canvas.getContext('2d');
 
     // THE desert
-    desert = {
+    var desert = {
         width: 1000,
         height: 700,
         population: [],
         food: [],
         silver: [],
-        ghazzu:false,
+        water: [],
+        ghazzu: false,
         canvas: ctx
-    }
+    };
 
     var populateDesert = function(size, lookRange, influenceRange) {
         // populate the desert
@@ -93,10 +95,10 @@ $(function() {
             // initial values
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height;
-            var foodAmmount = Math.random() * 100 + 20;
+            var foodAmount = Math.random() * 100 + 20;
 
             // create food
-            var food = new Food(randomX, randomY, foodAmmount);
+            var food = new Food(randomX, randomY, foodAmount);
             desert.food.push(food);
         }
     };
@@ -108,16 +110,33 @@ $(function() {
             // initial values
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height;
-            var silverAmount = Math.random() * 100 + 20;
+            var silverAmount = Math.random() * 50 + 10;
 
-            // create food
+            // create silver
             var silver = new Silver(randomX, randomY, silverAmount);
             desert.silver.push(silver);
         }
 
     };
+
+	var createWater = function(size) {
+		// add food to the desert
+		var initialWater = size * WATER_RATIO;
+		for (var i = 0; i < initialWater; i++) {
+			// initial values
+			var randomX = Math.random() * desert.width;
+			var randomY = Math.random() * desert.height;
+			var quantity = Math.random() * 50 + 20;
+
+			// create water
+			var water = new Water(randomX, randomY, quantity);
+			desert.water.push(water);
+		}
+
+	};
     createFood(POPULATION);
     createSilver(POPULATION);
+	createWater(POPULATION);
 
     // internal use
     var time = null;
@@ -146,7 +165,7 @@ $(function() {
             } else {
                 desert.food[i] = null;
                 if (Math.random() < FOOD_RATIO / 50)
-                    desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 100 + 20);
+                    desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
             }
         }
 
@@ -160,10 +179,23 @@ $(function() {
             } else {
                 desert.silver[i] = null;
                 if (Math.random() < SILVER_RATIO / 100)
-                    desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 100 + 20);
+                    desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
             }
         }
 
+	    // update the silver
+	    for (var i in desert.water) {
+		    var water = desert.water[i];
+
+		    if (water && !water.collected) {
+			    water.draw(ctx);
+			    water.update(desert);
+		    } else {
+			    desert.water[i] = null;
+			    if (Math.random() < WATER_RATIO / 100)
+				    desert.water[i] = new Water(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 50);
+		    }
+	    }
         // list of tribe that died during this time-step
         var deadList = [];
 
@@ -228,8 +260,9 @@ $(function() {
     var cleanDesert = function() {
         desert.food = [];
         desert.silver = [];
-        desert.population = [];
-    }
+	    desert.water = [];
+	    desert.population = [];
+    };
 
     var restartButton = document.getElementById("restart");
     restartButton.onclick = function() {
@@ -237,5 +270,6 @@ $(function() {
         populateDesert(POPULATION, LOOK_AREA, INFLUENCE_AREA);
         createFood(POPULATION);
         createSilver(POPULATION);
+        createWater(POPULATION);
     }
 });
