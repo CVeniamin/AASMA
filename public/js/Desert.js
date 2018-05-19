@@ -44,6 +44,7 @@ $(function() {
         water: [],
         ghazzu: false,
         trading: false,
+	    caravansEnabled: false,
         canvas: ctx
     };
 
@@ -153,6 +154,11 @@ $(function() {
 		desert.trading = this.checked;
 	});
 
+	var caravansEnabled = document.getElementById("caravansEnabled");
+	caravansEnabled.addEventListener("change", function(){
+		desert.caravansEnabled = this.checked;
+	});
+
     // one time-step of the timeline loop
     var step = function() {
         // clear the screen (with a fade)
@@ -170,8 +176,14 @@ $(function() {
                 food.update(desert);
             } else {
                 desert.food[i] = null;
-                if (Math.random() < FOOD_RATIO / 50)
-                    desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
+                if (Math.random() < FOOD_RATIO / 50){
+	                desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
+
+	                // sometimes food is a caravan
+                    if(Math.random() < 0.3){
+	                    desert.food[i].isCaravan = true;
+                    }
+                }
             }
         }
 
@@ -184,8 +196,14 @@ $(function() {
                 silver.update(desert);
             } else {
                 desert.silver[i] = null;
-                if (Math.random() < SILVER_RATIO / 100)
-                    desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
+                if (Math.random() < SILVER_RATIO / 100){
+	                desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
+
+	                // sometimes silver is a caravan
+                    if(Math.random() < 0.3){
+	                    desert.silver[i].isCaravan = true;
+                    }
+                }
             }
         }
 
@@ -198,7 +216,7 @@ $(function() {
 			    water.update(desert);
 		    } else {
 			    desert.water[i] = null;
-			    if (Math.random() < WATER_RATIO / 100)
+			    if (Math.random() < FOOD_RATIO / 100)
 				    desert.water[i] = new Water(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 50);
 		    }
 	    }

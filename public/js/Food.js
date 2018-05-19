@@ -6,6 +6,7 @@ class Food {
         this.nutrition = amount;
         this.radius = 5;
         this.eaten = false;
+        this.isCaravan = false;
         // helper
         this.TWO_PI = Math.PI * 2;
     }
@@ -35,7 +36,9 @@ class Food {
         this.radius += (target - this.radius) / 5;
 
         // move food
-        // this.location.add(this.velocity);
+        if (world.caravansEnabled && this.isCaravan){
+	        this.location.add(this.velocity);
+        }
 
         // if food goes out of the boundaries of the desert, remove it
         if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0)

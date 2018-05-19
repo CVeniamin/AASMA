@@ -1,7 +1,7 @@
 // MASS MULTIPLIERS - these values represent the relationship between the Tribe's properties and its mass
 var food = 10,
     silver = 10,
-    water = 10,
+    water = 30,
     MAX_SPEED = 3,
     MAX_FORCE = .1,
     SEPARATION_RANGE = 30,
@@ -51,21 +51,6 @@ class Tribe {
         // surrounding Tribes
         var neighbors = this.look(desert.population, this.lookRange, Math.PI * 2);
 
-	    var nearbyWater = this.look(desert.water, this.influenceRange, Math.PI * 2);
-
-	    // collect water
-	    for (var index in nearbyWater) {
-		    var water = nearbyWater[index];
-		    if (water && !water.collected) {
-			    // go to the silver
-			    this.follow(water.location, water.radius / 10);
-
-			    // if close enough...
-			    if (this.location.dist(water.location) < water.radius) {
-				    water.collectedBy(this);
-			    }
-		    }
-	    }
         // nearby food
         var nearbyFood = this.look(desert.food, this.influenceRange, Math.PI * 2);
 
@@ -99,6 +84,22 @@ class Tribe {
                 }
             }
         }
+
+	    var nearbyWater = this.look(desert.water, this.influenceRange, Math.PI * 2);
+
+	    // collect water
+	    for (var index in nearbyWater) {
+		    var water = nearbyWater[index];
+		    if (water && !water.collected) {
+			    // go to the water
+			    this.follow(water.location, water.radius / 10);
+
+			    // if close enough...
+			    if (this.location.dist(water.location) < water.radius) {
+				    water.collectedBy(this);
+			    }
+		    }
+	    }
 	    this.friends = [];
         // find nearby Tribes that aren't too big or too small
         for (var j in neighbors) {
@@ -125,7 +126,7 @@ class Tribe {
                 }
             }
 
-            // if any, defend it/them
+            // if any, defend from them
             if (strong.length){
                 this.defend(strong, this.lookRange);
             }
@@ -237,8 +238,8 @@ class Tribe {
 
         //Tribes of very different colors won't stay together as tightly as Tribes of the same color
         separation.mul(2);
-        alignment.mul(0.7 * affinity);
-        cohesion.mul(0.5 * affinity);
+        alignment.mul(0.8 * affinity);
+        cohesion.mul(1.2 * affinity);
 
         // apply forces
         this.applyForce(separation);
@@ -257,7 +258,7 @@ class Tribe {
         var that = this;
 
         this.trade(TribeList, function(tribe) {
-            var trade = 1 / 10;
+            var trade = 1 / 100;
             // "fake" trade of food with water
             if (that.food < tribe.food && that.water > tribe.water) {
                 // water more valuable
@@ -291,19 +292,30 @@ class Tribe {
             
             this.developed = false;
             var location = this.location.copy();
-            var mass = this.mass / 10;
-            this.mass /=  2;
-            this.food /= 2;
-            this.silver /= 2;
+
+            // divide equally all resources between new tribe and old one
+	        this.food /= 2;
+	        this.silver /= 2;
+	        this.water /= 2;
+
+	        // update to new mass
+	        this.mass = this.updateMass();
+	        var mass = this.mass;
+
             var color = this.color;
 
             // mutation
             var mutation_rate = .01;
-            // mass += Math.random() < mutation_rate ? Math.random() * 2 - 1 : 0;
+            mass += Math.random() < mutation_rate ? Math.random() * 10 : 0;
             color = Math.random() < mutation_rate ? Math.random() : color;
 
             // add to desert population
-            desertPopulation.push(new Tribe(mass, location.x, location.y, color, this.lookRange, this.influenceRange));
+            var tribe = new Tribe(mass, location.x, location.y, color, this.lookRange, this.influenceRange);
+
+            tribe.food = this.food;
+            tribe.water = this.water;
+            tribe.silver = this.silver;
+            desertPopulation.push(tribe);
         }
     }
 
@@ -380,6 +392,7 @@ class Tribe {
 			return;
 		}
 
+		// this.applyForce(this.cohesion(TribeList));
 		for (var i in TribeList) {
 			if (this.location.dist(TribeList[i].location) < this.lookRange){
 				action(TribeList[i]); // <- execute action when reaching a Tribe
@@ -502,10 +515,6 @@ class Tribe {
         // draw the behaviour of the Tribe (lines)
         this.drawBehavior(ctx);
 
-        if (this.food < 0){
-	        this.color = "black";
-        }
-
         if (Tribe.showBehavior && this.developed){
             this.color = "pink";
         }
@@ -516,9 +525,9 @@ class Tribe {
         ctx.strokeStyle = this.color;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-        /* ctx.quadraticCurveTo(x2, y2, x, y);
-        ctx.quadraticCurveTo(x3, y3, x1, y1); */
-        var radiusX = (this.mass + this.food +  this.water + this.silver + this.length) * 1 / 5;
+        /*ctx.quadraticCurveTo(x2, y2, x, y);
+        ctx.quadraticCurveTo(x3, y3, x1, y1);*/
+        var radiusX = Math.abs(this.mass);
         var radiusY = radiusX;
         var rotation = 45 * Math.PI / 180;
         ctx.ellipse(x1, y1, radiusX, radiusY, rotation, 0, 2 * Math.PI);
@@ -614,6 +623,10 @@ class Tribe {
         }
     }
 
+    updateMass(){
+        return (this.food + this.silver + this.water) / 3;
+    }
+
     // update the Tribe's position and state
     update(desert) {
         // move the Tribe
@@ -626,7 +639,7 @@ class Tribe {
         this.location.add(this.velocity);
         this.acceleration.limit(this.maxforce);
 
-        this.mass = (this.food + this.silver + this.water) / 3;
+        this.mass = this.updateMass();
 
         // spend food
         // this.food -= ((this.acceleration.mag() * (Math.exp(this.mass / 50))) * this.age * this.velocity.mag()) / 100;
@@ -636,19 +649,22 @@ class Tribe {
 
 
         // silver can't have negative values
-        if (this.silver < 0 ){
+        if (this.silver <= 0 ){
             this.silver = 0;
         }
 
         // die
-        if (this.food < 0 || this.water < 0) {
+        if (this.food <= 0 || this.water <= 0) {
+            this.food = 0;
+            this.water = 0;
+
             this.dead = true;
 			// this.trigger('death');
         }
 
         // grow older
         this.age *= 1.0005;
-        this.developed = (this.age > 3 || this.mass === 70);
+        this.developed = (this.age > 3 || this.mass === 40);
 
         if(this.developed){
             this.age = 1;

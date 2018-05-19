@@ -6,6 +6,7 @@ class Silver {
         this.value = amount;
         this.radius = 5;
         this.collected = false;
+        this.isCaravan = false;
         // helper
         this.TWO_PI = Math.PI * 2;
     }
@@ -35,7 +36,9 @@ class Silver {
         this.radius += (target - this.radius) / 5;
 
         // move Silver
-        // this.location.add(this.velocity);
+        if(world.caravansEnabled && this.isCaravan){
+	        this.location.add(this.velocity);
+        }
 
         // if Silver goes out of the boundaries of the desert, kill it
         if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0)
