@@ -29,7 +29,7 @@ $(function() {
     var MIN_MASS = .5;
     var MAX_MASS = 3.5;
     var SCREEN = 1;
-    var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
+    // var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
 
     // canvas elements
     var canvas = $("#canvas")[0];
@@ -56,10 +56,10 @@ $(function() {
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height;
             //var randomMass = MIN_MASS + (Math.random() * Math.random() * Math.random() * Math.random()) * MAX_MASS;
-            var color = colors[Math.floor(Math.random() * colors.length)];
+            var hue = Math.random() < .5 ? Math.random() * .5 : 1 - Math.random() * .5;
 
             // create tribe
-            var tribe = new Tribe(randomX, randomY, color, lookRange, influenceRange);
+            var tribe = new Tribe(randomX, randomY, hue, lookRange, influenceRange);
 
             // add tribe to the desert population
             desert.population.push(tribe);
@@ -180,7 +180,7 @@ $(function() {
                 food.update(desert);
             } else {
                 desert.food[i] = null;
-                if (Math.random() < FOOD_RATIO / 10){
+                if (Math.random() < FOOD_RATIO){
 	                desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
 
 	                // sometimes food is a caravan
@@ -200,7 +200,7 @@ $(function() {
                 silver.update(desert);
             } else {
                 desert.silver[i] = null;
-                if (Math.random() < SILVER_RATIO / 10){
+                if (Math.random() < SILVER_RATIO){
 	                desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
 
 	                // sometimes silver is a caravan
@@ -220,7 +220,7 @@ $(function() {
 			    water.update(desert);
 		    } else {
 			    desert.water[i] = null;
-			    if (Math.random() < WATER_RATIO / 10){
+			    if (Math.random() < WATER_RATIO){
 			        var x = Math.random() * desert.width;
 			        var y = Math.random() * desert.height;
 				    desert.water[i] = new Water(x, y, Math.random() * 50 + 50);

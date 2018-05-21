@@ -9,7 +9,7 @@ var food = 10,
 
 // Tribe constructor
 class Tribe {
-    constructor(x, y, color, lookRange, influenceRange) {
+    constructor(x, y, hue, lookRange, influenceRange) {
         // Tribe's properties
         this.ID = Tribe.uid();
         this.food = food;
@@ -26,11 +26,10 @@ class Tribe {
         this.velocity = new Vector(0, 0);
         this.acceleration = new Vector(0, 0);
         this.wandering = new Vector(.2, .2);
-	    this.hue = Math.random() < .5 ? Math.random() * .5 : 1 - Math.random() * .5; // <- the hue is used for color generation and cooperation
+	    this.hue = hue; // used for color generation and cooperation
 	    this.color = Color.hue2hex(this.hue);
-        this.auxColor = this.color;
-        // this.hue = Math.random() < .5 ? Color.hex2hsv(this.color).h * .5 : 1 -  Color.hex2hsv(this.color).h * .5; // <- the hue is used for color generation and cooperation
-        this.dead = false;
+	    this.auxColor = this.color;
+	    this.dead = false;
         this.age = 1;
         this.developed = false;
         this.gather = GATHER_POWER;
@@ -59,10 +58,14 @@ class Tribe {
 	    this.gatherResources(nearbyWater);
 
 	    this.friends = [];
+	    this.enemies = [];
         // find nearby Tribes that aren't too big or too small
         for (var j in neighbors) {
-            if (neighbors[j].mass < this.mass * 2 && neighbors[j].mass > this.mass / 2)
-                this.friends.push(neighbors[j]);
+            if (neighbors[j].mass < this.mass * 2 && neighbors[j].mass > this.mass / 2){
+	            this.friends.push(neighbors[j]);
+            } else {
+            	this.enemies.push(neighbors[j]);
+            }
         }
 
         // if any, unite with them
@@ -113,7 +116,6 @@ class Tribe {
         }
         if (desert.trade){
 	        // cooperate with it/them
-	        // TODO cooperation between developed tribes or similar colors
 	        var cooperate = [];
 	        for (var j in this.friends){
 		        if (Color.hueDifference(this.friends[j].hue, this.hue) < 0.3){
@@ -137,7 +139,7 @@ class Tribe {
 	    for (var index in resources) {
 		    var resource = resources[index];
 		    if (resource && !resource.collected) {
-			    this.follow(resource.location, resource.radius / 10);
+			    this.follow(resource.location, resource.radius);
 
 			    // if close enough...
 			    if (this.location.dist(resource.location) < resource.radius) {
@@ -151,8 +153,11 @@ class Tribe {
     defend(TribeList, dist) {
         this.defendList = TribeList;
 
+	    var separation = this.separate(TribeList, this.influenceRange);
+	    this.applyForce(separation);
+
         for (var i in TribeList) {
-            var d = this.location.dist(TribeList[i].location)
+            var d = this.location.dist(TribeList[i].location);
             if (d < dist) {
                 var defend = TribeList[i].location.copy().sub(this.location).mul(-dist);
                 this.applyForce(defend);
@@ -192,8 +197,8 @@ class Tribe {
             that.silver -= 5 / cost;
             tribe.silver -= 5 / cost;
 
-            var attack = tribe.location.copy().sub(that.location).mul(that.lookRange / 10);
-            that.applyForce(attack);
+	        var attack = tribe.location.copy().sub(that.location).mul(that.maxforce);
+	        that.applyForce(attack);
         });
         if (Tribe.showBehavior){
             this.color = "red";
@@ -204,14 +209,14 @@ class Tribe {
         this.unitedList = TribeList;
 
         // compute vectors
-        var separation = this.separate(TribeList, this.influenceRange).limit(this.maxforce);
-        var alignment = this.align(TribeList).limit(this.maxforce);
-        var cohesion = this.cohesion(TribeList).limit(this.maxforce);
+        var separation = this.separate(TribeList, this.influenceRange);
+        var alignment = this.align(TribeList, this.influenceRange);
+        var cohesion = this.cohesion(TribeList, this.influenceRange);
         var affinity = this.affinity(TribeList);
 
         //Tribes of very different colors won't stay together as tightly as Tribes of the same color
-        separation.mul(2);
-        alignment.mul(0.8 * affinity);
+        separation.mul(-TribeList.length * Math.log(affinity));
+        alignment.mul(0.8 * affinity); //
         cohesion.mul(1.2 * affinity);
 
         // apply forces
@@ -230,6 +235,8 @@ class Tribe {
 
         var that = this;
 
+	    var cohesion = this.cohesion(TribeList, this.influenceRange);
+	    this.applyForce(cohesion);
         this.trade(TribeList, function(tribe) {
             var trade = 1 / 100;
             // "fake" trade of food with water
@@ -268,16 +275,13 @@ class Tribe {
 	    this.water /= 2;
 
 	    // mutation
-	    var mutation_rate = .01;
+	    var mutation_rate = .1;
 
-	    // update to new mass
-	    var mass = Math.random() < mutation_rate ? Math.random() * 10 : 0.5;
-
-	    var color = this.color;
-	    color = Math.random() < mutation_rate ? Math.random() : color;
+	    var hue = this.hue;
+	    hue = Math.random() < mutation_rate ? Math.random() : hue;
 
 	    // add to desert population
-	    var tribe = new Tribe(location.x, location.y, color, this.lookRange, this.influenceRange);
+	    var tribe = new Tribe(location.x, location.y, hue, this.lookRange, this.influenceRange);
 
 	    tribe.food = this.food;
 	    tribe.water = this.water;
@@ -405,7 +409,7 @@ class Tribe {
             sum.div(neighbors.length);
             sum.normalize();
             sum.mul(this.maxspeed);
-            sum.sub(this.velocity)
+            sum.sub(this.velocity);
             sum.limit(this.maxforce);
         }
 
@@ -413,30 +417,36 @@ class Tribe {
     }
 
     // aligns the Tribe to the surrounding Tribes
-    align(neighbors) {
+    align(neighbors, range) {
         var sum = new Vector(0, 0);
 
         if (neighbors.length) {
             for (var i in neighbors) {
-                sum.add(neighbors[i].velocity);
+	            var d = this.location.dist(neighbors[i].location);
+	            if((d > 0) && (d < range)){
+		            sum.add(neighbors[i].velocity);
+                }
             }
             sum.div(neighbors.length);
             sum.normalize();
             sum.mul(this.maxspeed);
 
-            sum.sub(this.velocity).limit(this.maxspeed);
+            sum.sub(this.velocity).limit(this.maxforce);
         }
 
         return sum;
     }
 
     // moves the Tribe towards the center of the surrounding Tribes
-    cohesion(neighbors) {
+    cohesion(neighbors, range) {
         var sum = new Vector(0, 0);
 
         if (neighbors.length) {
             for (var i in neighbors) {
-                sum.add(neighbors[i].location);
+                var d = this.location.dist(neighbors[i].location);
+                if((d > 0) && (d < range)){
+	                sum.add(neighbors[i].location);
+                }
             }
             sum.div(neighbors.length);
             return this.seek(sum);
@@ -469,14 +479,8 @@ class Tribe {
         var x1 = this.location.x + Math.cos(angle) * this.base;
         var y1 = this.location.y + Math.sin(angle) * this.base;
 
-        var x = this.location.x - Math.cos(angle) * this.length;
-        var y = this.location.y - Math.sin(angle) * this.length;
-
-        var x2 = this.location.x + Math.cos(angle + this.HALF_PI) * this.base;
-        var y2 = this.location.y + Math.sin(angle + this.HALF_PI) * this.base;
-
-        var x3 = this.location.x + Math.cos(angle - this.HALF_PI) * this.base;
-        var y3 = this.location.y + Math.sin(angle - this.HALF_PI) * this.base;
+        var x = this.location.x - Math.cos(angle) * this.mass;
+        var y = this.location.y - Math.sin(angle) * this.mass;
 
         // draw the behaviour of the Tribe (lines)
         this.drawBehavior(ctx);
@@ -491,8 +495,6 @@ class Tribe {
         ctx.strokeStyle = this.color;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-        /*ctx.quadraticCurveTo(x2, y2, x, y);
-        ctx.quadraticCurveTo(x3, y3, x1, y1);*/
         var radiusX = Math.abs(this.mass);
         var radiusY = radiusX;
         var rotation = 45 * Math.PI / 180;
@@ -511,6 +513,8 @@ class Tribe {
             ctx.fillStyle = 'rgba(0, 0, 0, 0)';
             ctx.stroke();
             ctx.fill();
+
+	        // draws the look area
             ctx.save();
             ctx.beginPath();
             ctx.restore();
