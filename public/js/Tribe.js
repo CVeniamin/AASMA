@@ -1,32 +1,26 @@
-// MASS MULTIPLIERS - these values represent the relationship between the Tribe's properties and its mass
 var food = 10,
     silver = 10,
     water = 30,
-    MAX_SPEED = 3,
-    MAX_FORCE = .1,
-    SEPARATION_RANGE = 30,
-    LOOK_RANGE = 50,
-    INFLUENCE_RANGE = 200,
-    LENGTH = 20,
+    MAX_SPEED = 1.5,
+    MAX_FORCE = .45,
+    LENGTH = 10,
     GATHER_POWER = .2;
 
 
 // Tribe constructor
 class Tribe {
-    constructor(mass, x, y, color, lookRange, influenceRange) {
+    constructor(x, y, color, lookRange, influenceRange) {
         // Tribe's properties
         this.ID = Tribe.uid();
-        this.mass = mass > 0 ? mass : -mass;
         this.food = food;
         this.silver = silver;
         this.water = water;
-        this.maxspeed = MAX_SPEED * this.mass;
-        this.maxforce = MAX_FORCE / (this.mass * this.mass);
-        this.maxforce = MAX_FORCE / (this.mass * this.mass);
-        this.separationRange = this.mass * SEPARATION_RANGE;
+        this.mass = this.updateMass();
+	    this.maxspeed = MAX_SPEED;
+        this.maxforce = MAX_FORCE;
         this.lookRange = lookRange;
         this.influenceRange = influenceRange;
-        this.length = mass * LENGTH;
+        this.length = LENGTH;
         this.base = this.length * .5;
         this.location = new Vector(x, y);
         this.velocity = new Vector(0, 0);
@@ -39,67 +33,31 @@ class Tribe {
         this.dead = false;
         this.age = 1;
         this.developed = false;
-        this.gather = this.mass * GATHER_POWER;
+        this.gather = GATHER_POWER;
         this.friends = [];
         this.enemies = [];
         // helper
         this.HALF_PI = Math.PI * .5;
+        this.TWO_PI =  Math.PI * 2;
     }
 
     // computes all the information from the environment and decides in which direction travel
     travel(desert) {
         // surrounding Tribes
-        var neighbors = this.look(desert.population, this.lookRange, Math.PI * 2);
+        var neighbors = this.look(desert.population, this.influenceRange, this.TWO_PI);
 
         // nearby food
-        var nearbyFood = this.look(desert.food, this.influenceRange, Math.PI * 2);
+        var nearbyFood = this.look(desert.food, this.lookRange, this.TWO_PI);
+	    this.gatherResources(nearbyFood);
 
-        // eat food
-        for (var index in nearbyFood) {
-            var food = nearbyFood[index];
-            if (food && !food.eaten) {
-                // go to the food
-                this.follow(food.location, food.radius / 10);
-
-                // if close enough...
-                if (this.location.dist(food.location) < food.radius) {
-                    // eat the food
-                    food.eatenBy(this);
-                }
-            }
-        }
-
-        var nearbySilver = this.look(desert.silver, this.influenceRange, Math.PI * 2);
-
-        // collect silver
-        for (var index in nearbySilver) {
-            var silver = nearbySilver[index];
-            if (silver && !silver.collected) {
-                // go to the silver
-                this.follow(silver.location, silver.radius / 10);
-
-                // if close enough...
-                if (this.location.dist(silver.location) < silver.radius) {
-                    silver.collectedBy(this);
-                }
-            }
-        }
-
-	    var nearbyWater = this.look(desert.water, this.influenceRange, Math.PI * 2);
+	    // collect silver
+        var nearbySilver = this.look(desert.silver, this.lookRange, this.TWO_PI);
+        this.gatherResources(nearbySilver);
 
 	    // collect water
-	    for (var index in nearbyWater) {
-		    var water = nearbyWater[index];
-		    if (water && !water.collected) {
-			    // go to the water
-			    this.follow(water.location, water.radius / 10);
+	    var nearbyWater = this.look(desert.water, this.lookRange, this.TWO_PI);
+	    this.gatherResources(nearbyWater);
 
-			    // if close enough...
-			    if (this.location.dist(water.location) < water.radius) {
-				    water.collectedBy(this);
-			    }
-		    }
-	    }
 	    this.friends = [];
         // find nearby Tribes that aren't too big or too small
         for (var j in neighbors) {
@@ -155,25 +113,40 @@ class Tribe {
         }
         if (desert.trade){
 	        // cooperate with it/them
+	        // TODO cooperation between developed tribes or similar colors
+	        var cooperate = [];
+	        for (var j in this.friends){
+		        if (Color.hueDifference(this.friends[j].hue, this.hue) < 0.3){
+			        cooperate.push(this.friends[j]);
+		        }
+	        }
 	        this.cooperate(this.friends);
         }
-        // TODO cooperation between developed tribes or similar colors
+
 	    // if the Tribe is developed enough...
-	    // if (this.developed) {
-			// find nearby developed Tribes
-			var cooperate = [];
-			for (var j in this.friends){
-				if (Color.hueDifference(this.friends[j].hue, this.hue) < 0.3){
-					cooperate.push(this.friends[j]);
-				}
-			}
-			this.divide(desert.population);
-		// }
+	    if (this.developed) {
+		    this.divide(desert.population);
+		    this.developed = false;
+		}
 
         // defend the boundaries of the desert
         this.boundaries(desert);
     }
 
+    gatherResources(resources){
+	    for (var index in resources) {
+		    var resource = resources[index];
+		    if (resource && !resource.collected) {
+			    this.follow(resource.location, resource.radius / 10);
+
+			    // if close enough...
+			    if (this.location.dist(resource.location) < resource.radius) {
+				    resource.collectedBy(this);
+			    }
+		    }
+	    }
+    }
+    
     // makes the Tribe defend from a group of Tribes
     defend(TribeList, dist) {
         this.defendList = TribeList;
@@ -231,7 +204,7 @@ class Tribe {
         this.unitedList = TribeList;
 
         // compute vectors
-        var separation = this.separate(TribeList, this.separationRange).limit(this.maxforce);
+        var separation = this.separate(TribeList, this.influenceRange).limit(this.maxforce);
         var alignment = this.align(TribeList).limit(this.maxforce);
         var cohesion = this.cohesion(TribeList).limit(this.maxforce);
         var affinity = this.affinity(TribeList);
@@ -287,36 +260,29 @@ class Tribe {
     }
 
     divide(desertPopulation){
+	    var location = this.location.copy();
 
-        if (this.developed){
-            
-            this.developed = false;
-            var location = this.location.copy();
+	    // divide equally all resources between new tribe and old one
+	    this.food /= 2;
+	    this.silver /= 2;
+	    this.water /= 2;
 
-            // divide equally all resources between new tribe and old one
-	        this.food /= 2;
-	        this.silver /= 2;
-	        this.water /= 2;
+	    // mutation
+	    var mutation_rate = .01;
 
-	        // update to new mass
-	        this.mass = this.updateMass();
-	        var mass = this.mass;
+	    // update to new mass
+	    var mass = Math.random() < mutation_rate ? Math.random() * 10 : 0.5;
 
-            var color = this.color;
+	    var color = this.color;
+	    color = Math.random() < mutation_rate ? Math.random() : color;
 
-            // mutation
-            var mutation_rate = .01;
-            mass += Math.random() < mutation_rate ? Math.random() * 10 : 0;
-            color = Math.random() < mutation_rate ? Math.random() : color;
+	    // add to desert population
+	    var tribe = new Tribe(location.x, location.y, color, this.lookRange, this.influenceRange);
 
-            // add to desert population
-            var tribe = new Tribe(mass, location.x, location.y, color, this.lookRange, this.influenceRange);
-
-            tribe.food = this.food;
-            tribe.water = this.water;
-            tribe.silver = this.silver;
-            desertPopulation.push(tribe);
-        }
+	    tribe.food = this.food;
+	    tribe.water = this.water;
+	    tribe.silver = this.silver;
+	    desertPopulation.push(tribe);
     }
 
     // defend boundaries of the screen
@@ -342,7 +308,7 @@ class Tribe {
                 var diff = this.location.copy().sub(TribeList[i].location);
                 var a = this.velocity.angleBetween(diff);
                 var d = this.location.dist(TribeList[i].location);
-                if (d < radius && (a < angle / 2 || a > Math.PI * 2 - angle / 2))
+                if (d < radius && (a < angle / 2 || a > this.TWO_PI - angle / 2))
                     neighbors.push(TribeList[i]);
             }
 
@@ -352,7 +318,7 @@ class Tribe {
     // wander behaviour (when the Tribe is alone, i.e. it can't see other neighbors around)
     wander(radius) {
         if (Math.random() < .05) {
-            this.wandering.rotate(Math.PI * 2 * Math.random());
+            this.wandering.rotate(this.TWO_PI * Math.random());
         }
         this.velocity.add(this.wandering);
 
@@ -643,8 +609,8 @@ class Tribe {
 
         // spend food
         // this.food -= ((this.acceleration.mag() * (Math.exp(this.mass / 50))) * this.age * this.velocity.mag()) / 100;
-        this.food -= this.mass / 1000;
-        this.water -= this.mass / 1000;
+        this.food -= this.mass / 1500;
+        this.water -= this.mass / 1500;
         this.silver -= 0.0005;
 
 
@@ -654,17 +620,16 @@ class Tribe {
         }
 
         // die
-        if (this.food <= 0 || this.water <= 0) {
+        if (this.food < 0 || this.water < 0) {
             this.food = 0;
             this.water = 0;
-
             this.dead = true;
 			// this.trigger('death');
         }
 
         // grow older
         this.age *= 1.0005;
-        this.developed = (this.age > 3 || this.mass === 40);
+        this.developed = (this.age > 3 && this.mass >= 30);
 
         if(this.developed){
             this.age = 1;

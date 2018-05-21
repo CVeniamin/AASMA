@@ -6,6 +6,8 @@ $(function() {
         SILVER_COLOR = "#C0C0C0",
         WATER_COLOR = "#74ccf4",
 	    WATER_RATIO = 0.15,
+	    FOOD_RATIO = 0.15,
+	    SILVER_RATIO = 0.15,
         WIDTH = 1150,
         HEIGHT = 730,
         WALL_SIZE = 20,
@@ -26,7 +28,6 @@ $(function() {
 
     var MIN_MASS = .5;
     var MAX_MASS = 3.5;
-    var SILVER_RATIO = 0.2;
     var SCREEN = 1;
     var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
 
@@ -53,12 +54,12 @@ $(function() {
         for (var i = 0; i < size; i++) {
             // random setup
             var randomX = Math.random() * desert.width;
-            var randomY = Math.random() * desert.height
+            var randomY = Math.random() * desert.height;
             //var randomMass = MIN_MASS + (Math.random() * Math.random() * Math.random() * Math.random()) * MAX_MASS;
             var color = colors[Math.floor(Math.random() * colors.length)];
 
             // create tribe
-            var tribe = new Tribe(MIN_MASS, randomX, randomY, color, lookRange, influenceRange);
+            var tribe = new Tribe(randomX, randomY, color, lookRange, influenceRange);
 
             // add tribe to the desert population
             desert.population.push(tribe);
@@ -85,8 +86,11 @@ $(function() {
         populationSizeOutput = output;
     });
 
-    var FOOD_RATIO = getValueFromElement("foodRatio", "foodR", function(slider, output) {
-        FOOD_RATIO = slider.value;
+    var RESOURCE_RATIO = getValueFromElement("resourcesRatio", "resourcesR", function(slider, output) {
+        RESOURCE_RATIO = slider.value;
+	    FOOD_RATIO = RESOURCE_RATIO;
+	    SILVER_RATIO = RESOURCE_RATIO / 2;
+	    WATER_RATIO = RESOURCE_RATIO / 2;
         output.innerHTML = slider.value;
     });
 
@@ -171,12 +175,12 @@ $(function() {
         for (var i in desert.food) {
             var food = desert.food[i];
 
-            if (food && !food.eaten) {
+            if (food && !food.collected) {
                 food.draw(ctx);
                 food.update(desert);
             } else {
                 desert.food[i] = null;
-                if (Math.random() < FOOD_RATIO / 50){
+                if (Math.random() < FOOD_RATIO / 10){
 	                desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
 
 	                // sometimes food is a caravan
@@ -196,7 +200,7 @@ $(function() {
                 silver.update(desert);
             } else {
                 desert.silver[i] = null;
-                if (Math.random() < SILVER_RATIO / 100){
+                if (Math.random() < SILVER_RATIO / 10){
 	                desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
 
 	                // sometimes silver is a caravan
@@ -207,7 +211,7 @@ $(function() {
             }
         }
 
-	    // update the silver
+	    // update the water
 	    for (var i in desert.water) {
 		    var water = desert.water[i];
 
@@ -216,8 +220,11 @@ $(function() {
 			    water.update(desert);
 		    } else {
 			    desert.water[i] = null;
-			    if (Math.random() < FOOD_RATIO / 100)
-				    desert.water[i] = new Water(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 50);
+			    if (Math.random() < WATER_RATIO / 10){
+			        var x = Math.random() * desert.width;
+			        var y = Math.random() * desert.height;
+				    desert.water[i] = new Water(x, y, Math.random() * 50 + 50);
+                }
 		    }
 	    }
         // list of tribe that died during this time-step

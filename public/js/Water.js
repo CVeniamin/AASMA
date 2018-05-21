@@ -18,7 +18,7 @@ class Water {
 		ctx.arc(this.location.x, this.location.y, this.radius, 0, this.TWO_PI);
 
 		var old = ctx.globalAlpha;
-		ctx.globalAlpha = .5
+		ctx.globalAlpha = .5;
 		ctx.fillStyle = "#2389da";
 		ctx.fill();
 		ctx.font = '14px Verdana';
@@ -38,8 +38,9 @@ class Water {
 		// this.location.add(this.velocity);
 
 		// if Water goes out of the boundaries of the desert, kill it
-		if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0)
+		if (this.location.x > world.width || this.location.x < 0 || this.location.y > world.height || this.location.y < 0){
 			this.quantity = 0;
+		}
 
 		// got collected
 		if (this.radius < 5){
