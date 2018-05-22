@@ -135,3 +135,55 @@ class Color {
 	    return Math.abs(hueA - hueB);
     }
 }
+
+class Graph{
+    /*constructor(){
+	    this.gradientStroke = 'rgba(0, 119, 220, 0.6)';
+	    this.gradientFill = 'rgba(0, 119, 220, 0.4)';
+    }*/
+
+	static addData(chart, data) {
+		chart.data.datasets[0].data = data;
+		chart.update();
+	}
+
+	static addData(chart, labels, data) {
+		this.removeData(chart);
+		labels.forEach(function (label, index) {
+			chart.data.labels.push(label);
+			chart.data.datasets.forEach(function(dataset) {
+				dataset.data.push(data[index]);
+			});
+		});
+		chart.update();
+	}
+
+	static removeData(chart) {
+		console.log(chart.data.labels);
+		chart.data.labels.pop();
+		chart.data.datasets.forEach(function(dataset){
+			dataset.data.pop();
+		});
+		chart.update();
+		console.log(chart.data.labels);
+	}
+
+	static createChart(ctx, type, labels, title, data){
+		return new Chart(ctx, {
+			// The type of chart we want to create
+			type: type,
+
+			// The data for our dataset
+			data: {
+				labels: labels,
+				datasets: [{
+					label: title,
+					data: data,
+				}]
+			},
+
+			// Configuration options go here
+			options: {}
+		});
+    }
+}

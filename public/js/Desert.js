@@ -46,6 +46,7 @@ $(function() {
         ghazzu: false,
         trading: false,
 	    caravansEnabled: false,
+	    statistics: [],
         canvas: ctx
     };
 
@@ -144,10 +145,6 @@ $(function() {
     createSilver(POPULATION);
 	createWater(POPULATION);
 
-    // internal use
-    var time = null;
-    var interval = 20;
-    var steps = 0;
     var raiding = document.getElementById("raiding");
     raiding.addEventListener("change", function(){
         desert.ghazzu = this.checked;
@@ -163,9 +160,16 @@ $(function() {
 		desert.caravansEnabled = this.checked;
 	});
 
+	var statistics = document.getElementById('statistics').getContext('2d');
+	var statisticsChart = Graph.createChart(statistics, "bar", [], "Desert Statistics", [1, 2]);
+
+	// internal use
+	var time = null;
+	var interval = 20;
+	var steps = 0;
     // one time-step of the timeline loop
     var step = function() {
-        // clear the screen (with a fade)
+	    // clear the screen (with a fade)
         ctx.globalAlpha = 0.8;
         ctx.fillStyle = DESERT_COLOR;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -267,6 +271,25 @@ $(function() {
 
     // kick it off!
     setInterval(step, interval);
+
+	setInterval(function () {
+		var totalFood = 0;
+		var totalWater = 0;
+		var totalSilver = 0;
+		desert.population.forEach(function (tribe) {
+			totalFood += tribe.food;
+			totalSilver += tribe.silver;
+			totalWater += tribe.water;
+		});
+		desert.statistics.push({
+			tribes : desert.population.length,
+			food: totalFood,
+			water: totalWater,
+			silver: totalSilver
+		});
+		// TODO draw new statistics
+		// Graph.addData(statisticsChart, ["tribes", "food", "water", "silver"], [desert.statistics]);
+	}, 20 * 1000); //every 20 seconds
 
     // user-events listeners (clicks and keys)
     $(canvas).mouseup(function() {
