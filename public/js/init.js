@@ -8,7 +8,7 @@ Math.random = (function() {
 	var seed;
 
 	var setRandomSeed = Math.setRandomSeed = function(newSeed) {
-		seed = newSeed || randomSeed();
+		seed = newSeed || Math.randomSeed();
 	};
 
 	setRandomSeed();

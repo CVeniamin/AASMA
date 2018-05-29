@@ -25,6 +25,37 @@ class Color {
         return "#" + r.substr(0, 2) + g.substr(0, 2) + b.substr(0, 2);
     }
 
+    static rgb2hsv(r, g, b) {
+        if (r && g === undefined && b === undefined) {
+            b = r.b, g = r.g, r = r.r;
+        }
+        r /= 255, g /= 255, b /= 255;
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        var h, s, v = max;
+      
+        var d = max - min;
+        s = max == 0 ? 0 : d / max;
+      
+        if (max == min) {
+          h = 0; // achromatic
+        } else {
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+      
+          h /= 6;
+        }
+      
+        return {  
+            h: h, 
+            s: s,  
+            v: v 
+        };
+
+      }
+
     static hsv2rgb(h, s, v) {
         var r, g, b, i, f, p, q, t;
         if (h && s === undefined && v === undefined) {
@@ -63,9 +94,15 @@ class Color {
     }
 
     static hue2hex(hue) {
-        var rgb = Tribe.hsv2rgb(hue, 1, 1);
-        var hex = Tribe.rgb2hex(rgb);
+        var rgb = this.hsv2rgb(hue, 1, 1);
+        var hex = this.rgb2hex(rgb);
         return hex;
+    }
+
+    static hex2hsv(hex){
+        var rgb = this.hex2rgb(hex);
+        var hsv = this.rgb2hsv(rgb);
+        return hsv;
     }
 
     static interpolate(colorA, colorB) {
@@ -78,5 +115,75 @@ class Color {
         } else
             interpolation = (colorA + colorB) / 2;
         return interpolation;
+    }
+
+    static difference(colorA, colorB) {
+    
+        if (!colorA || !colorB){
+	        return 0;
+        }
+        
+        colorA = this.hex2rgb(colorA);
+        colorB = this.hex2rgb(colorB);
+
+        var perc1 = Math.round((colorA.r / 255  + colorA.g / 255 + colorA.b / 255) / 3);
+        var perc2 = Math.round((colorB.r / 255  + colorB.g / 255 + colorB.b / 255) / 3);
+        return Math.abs(perc1 - perc2);
+    }
+
+    static hueDifference(hueA, hueB){
+	    return Math.abs(hueA - hueB);
+    }
+}
+
+class Graph{
+    /*constructor(){
+	    this.gradientStroke = 'rgba(0, 119, 220, 0.6)';
+	    this.gradientFill = 'rgba(0, 119, 220, 0.4)';
+    }*/
+
+	static addData(chart, data) {
+		chart.data.datasets[0].data = data;
+		chart.update();
+	}
+
+	static addData(chart, labels, data) {
+		this.removeData(chart);
+		labels.forEach(function (label, index) {
+			chart.data.labels.push(label);
+			chart.data.datasets.forEach(function(dataset) {
+				dataset.data.push(data[index]);
+			});
+		});
+		chart.update();
+	}
+
+	static removeData(chart) {
+		console.log(chart.data.labels);
+		chart.data.labels.pop();
+		chart.data.datasets.forEach(function(dataset){
+			dataset.data.pop();
+		});
+		chart.update();
+		console.log(chart.data.labels);
+	}
+
+	static createChart(ctx, type, labels, title, data){
+		return new Chart(ctx, {
+			// The type of chart we want to create
+			type: type,
+
+			// The data for our dataset
+			data: {
+				labels: labels,
+				datasets: [{
+					label: title,
+					data: data,
+				}]
+			},
+
+			// Configuration options go here
+			options: {}
+		});
     }
 }

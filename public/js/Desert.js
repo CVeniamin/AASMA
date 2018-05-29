@@ -4,7 +4,10 @@ $(function() {
         FOOD_COLOR = "#00FF00",
         FOOD_SIZE = 16,
         SILVER_COLOR = "#C0C0C0",
-        WATER_COLOR = "#0077BE",
+        WATER_COLOR = "#74ccf4",
+	    WATER_RATIO = 0.15,
+	    FOOD_RATIO = 0.15,
+	    SILVER_RATIO = 0.15,
         WIDTH = 1150,
         HEIGHT = 730,
         WALL_SIZE = 20,
@@ -25,36 +28,39 @@ $(function() {
 
     var MIN_MASS = .5;
     var MAX_MASS = 3.5;
-    var SILVER_RATIO = .1;
     var SCREEN = 1;
-    var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
+    // var colors = ["#00FF00", "#FF0000", "#F0F0F0", "#0000FF", "#000000", "#FFFFFF"];
 
     // canvas elements
     var canvas = $("#canvas")[0];
     var ctx = canvas.getContext('2d');
 
     // THE desert
-    desert = {
+    var desert = {
         width: 1000,
         height: 700,
         population: [],
         food: [],
         silver: [],
-        ghazzu:false,
+        water: [],
+        ghazzu: false,
+        trading: false,
+	    caravansEnabled: false,
+	    statistics: [],
         canvas: ctx
-    }
+    };
 
     var populateDesert = function(size, lookRange, influenceRange) {
         // populate the desert
         for (var i = 0; i < size; i++) {
             // random setup
             var randomX = Math.random() * desert.width;
-            var randomY = Math.random() * desert.height
+            var randomY = Math.random() * desert.height;
             //var randomMass = MIN_MASS + (Math.random() * Math.random() * Math.random() * Math.random()) * MAX_MASS;
-            var color = colors[Math.floor(Math.random() * colors.length)];
+            var hue = Math.random() < .5 ? Math.random() * .5 : 1 - Math.random() * .5;
 
             // create tribe
-            var tribe = new Tribe(MIN_MASS, randomX, randomY, color, lookRange, influenceRange);
+            var tribe = new Tribe(randomX, randomY, hue, lookRange, influenceRange);
 
             // add tribe to the desert population
             desert.population.push(tribe);
@@ -81,8 +87,11 @@ $(function() {
         populationSizeOutput = output;
     });
 
-    var FOOD_RATIO = getValueFromElement("foodRatio", "foodR", function(slider, output) {
-        FOOD_RATIO = slider.value;
+    var RESOURCE_RATIO = getValueFromElement("resourcesRatio", "resourcesR", function(slider, output) {
+        RESOURCE_RATIO = slider.value;
+	    FOOD_RATIO = RESOURCE_RATIO;
+	    SILVER_RATIO = RESOURCE_RATIO / 2;
+	    WATER_RATIO = RESOURCE_RATIO / 2;
         output.innerHTML = slider.value;
     });
 
@@ -93,10 +102,10 @@ $(function() {
             // initial values
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height;
-            var foodAmmount = Math.random() * 100 + 20;
+            var foodAmount = Math.random() * 100 + 20;
 
             // create food
-            var food = new Food(randomX, randomY, foodAmmount);
+            var food = new Food(randomX, randomY, foodAmount);
             desert.food.push(food);
         }
     };
@@ -108,29 +117,59 @@ $(function() {
             // initial values
             var randomX = Math.random() * desert.width;
             var randomY = Math.random() * desert.height;
-            var silverAmount = Math.random() * 100 + 20;
+            var silverAmount = Math.random() * 50 + 10;
 
-            // create food
+            // create silver
             var silver = new Silver(randomX, randomY, silverAmount);
             desert.silver.push(silver);
         }
 
     };
+
+	var createWater = function(size) {
+		// add food to the desert
+		var initialWater = size * WATER_RATIO;
+		for (var i = 0; i < initialWater; i++) {
+			// initial values
+			var randomX = Math.random() * desert.width;
+			var randomY = Math.random() * desert.height;
+			var quantity = Math.random() * 50 + 20;
+
+			// create water
+			var water = new Water(randomX, randomY, quantity);
+			desert.water.push(water);
+		}
+
+	};
     createFood(POPULATION);
     createSilver(POPULATION);
+	createWater(POPULATION);
 
-    // internal use
-    var time = null;
-    var interval = 20;
-    var steps = 0;
     var raiding = document.getElementById("raiding");
     raiding.addEventListener("change", function(){
         desert.ghazzu = this.checked;
     });
 
+	var trading = document.getElementById("trading");
+	trading.addEventListener("change", function(){
+		desert.trading = this.checked;
+	});
+
+	var caravansEnabled = document.getElementById("caravansEnabled");
+	caravansEnabled.addEventListener("change", function(){
+		desert.caravansEnabled = this.checked;
+	});
+
+	var statistics = document.getElementById('statistics').getContext('2d');
+	var statisticsChart = Graph.createChart(statistics, "bar", [], "Desert Statistics", [1, 2]);
+
+	// internal use
+	var time = null;
+	var interval = 20;
+	var steps = 0;
     // one time-step of the timeline loop
     var step = function() {
-        // clear the screen (with a fade)
+	    // clear the screen (with a fade)
         ctx.globalAlpha = 0.8;
         ctx.fillStyle = DESERT_COLOR;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -140,13 +179,19 @@ $(function() {
         for (var i in desert.food) {
             var food = desert.food[i];
 
-            if (food && !food.eaten) {
+            if (food && !food.collected) {
                 food.draw(ctx);
                 food.update(desert);
             } else {
                 desert.food[i] = null;
-                if (Math.random() < FOOD_RATIO / 50)
-                    desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 100 + 20);
+                if (Math.random() < FOOD_RATIO){
+	                desert.food[i] = new Food(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 80 + 20);
+
+	                // sometimes food is a caravan
+                    if(Math.random() < 0.3){
+	                    desert.food[i].isCaravan = true;
+                    }
+                }
             }
         }
 
@@ -159,11 +204,33 @@ $(function() {
                 silver.update(desert);
             } else {
                 desert.silver[i] = null;
-                if (Math.random() < SILVER_RATIO / 100)
-                    desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 100 + 20);
+                if (Math.random() < SILVER_RATIO){
+	                desert.silver[i] = new Silver(Math.random() * desert.width, Math.random() * desert.height, Math.random() * 50 + 10);
+
+	                // sometimes silver is a caravan
+                    if(Math.random() < 0.3){
+	                    desert.silver[i].isCaravan = true;
+                    }
+                }
             }
         }
 
+	    // update the water
+	    for (var i in desert.water) {
+		    var water = desert.water[i];
+
+		    if (water && !water.collected) {
+			    water.draw(ctx);
+			    water.update(desert);
+		    } else {
+			    desert.water[i] = null;
+			    if (Math.random() < WATER_RATIO){
+			        var x = Math.random() * desert.width;
+			        var y = Math.random() * desert.height;
+				    desert.water[i] = new Water(x, y, Math.random() * 50 + 50);
+                }
+		    }
+	    }
         // list of tribe that died during this time-step
         var deadList = [];
 
@@ -200,10 +267,29 @@ $(function() {
             populationSizeOutput.innerHTML = desert.population.length;
             populationSlider.value = desert.population.length;
         }
-    }
+    };
 
     // kick it off!
     setInterval(step, interval);
+
+	setInterval(function () {
+		var totalFood = 0;
+		var totalWater = 0;
+		var totalSilver = 0;
+		desert.population.forEach(function (tribe) {
+			totalFood += tribe.food;
+			totalSilver += tribe.silver;
+			totalWater += tribe.water;
+		});
+		desert.statistics.push({
+			tribes : desert.population.length,
+			food: totalFood,
+			water: totalWater,
+			silver: totalSilver
+		});
+		// TODO draw new statistics
+		// Graph.addData(statisticsChart, ["tribes", "food", "water", "silver"], [desert.statistics]);
+	}, 20 * 1000); //every 20 seconds
 
     // user-events listeners (clicks and keys)
     $(canvas).mouseup(function() {
@@ -212,7 +298,7 @@ $(function() {
         $('#footer').html('click on gameboard to <b>' + (Tribe.showBehavior ? 'exit' : 'enter') + '</b> debugging');
     });
 
-    // resizing the dimesions of the desert when resising the screen
+    // resizing the dimensions of the desert when resizing the screen
     $(window).resize(function() {
         // resize desert
         // desert.width = $(window).width() * SCREEN;
@@ -228,8 +314,9 @@ $(function() {
     var cleanDesert = function() {
         desert.food = [];
         desert.silver = [];
-        desert.population = [];
-    }
+	    desert.water = [];
+	    desert.population = [];
+    };
 
     var restartButton = document.getElementById("restart");
     restartButton.onclick = function() {
@@ -240,5 +327,6 @@ $(function() {
         populateDesert(POPULATION, LOOK_AREA, INFLUENCE_AREA);
         createFood(POPULATION);
         createSilver(POPULATION);
+        createWater(POPULATION);
     }
 });
