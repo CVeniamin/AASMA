@@ -233,6 +233,9 @@ $(function() {
 
     var restartButton = document.getElementById("restart");
     restartButton.onclick = function() {
+		// Get current seed, or generate a random one
+		Math.setRandomSeed(); // TODO: get and parse random seed
+
         cleanDesert();
         populateDesert(POPULATION, LOOK_AREA, INFLUENCE_AREA);
         createFood(POPULATION);
