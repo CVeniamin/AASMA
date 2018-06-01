@@ -38,6 +38,11 @@ class Tribe {
         // helper
         this.HALF_PI = Math.PI * .5;
         this.TWO_PI =  Math.PI * 2;
+
+        // Queue microtask
+        //Promise.resolve().then(() => {
+            this.trigger('created', this);
+        //});
     }
 
     // computes all the information from the environment and decides in which direction travel
@@ -66,6 +71,12 @@ class Tribe {
             } else {
             	this.enemies.push(neighbors[j]);
             }
+        }
+        if (this.friends.length) {
+            this.trigger('madeFriend', this);
+        }
+        if (this.enemies.length) {
+            this.trigger('madeEnemy', this);
         }
 
         // if any, unite with them
@@ -500,7 +511,9 @@ class Tribe {
         var rotation = 45 * Math.PI / 180;
         ctx.ellipse(x1, y1, radiusX, radiusY, rotation, 0, 2 * Math.PI);
         ctx.stroke();
+        ctx.fillStyle = 'white';
         ctx.fillText(this.ID, x, y);
+        ctx.fillStyle = this.color;
         ctx.fill();
         
         if(Tribe.showBehavior){
@@ -609,7 +622,12 @@ class Tribe {
         this.location.add(this.velocity);
         this.acceleration.limit(this.maxforce);
 
+        var previousMass = this.mass;
         this.mass = this.updateMass();
+
+        if (this.mass !== previousMass) {
+            this.trigger('massUpdated', this.mass - previousMass);
+        }
 
         // spend food
         // this.food -= ((this.acceleration.mag() * (Math.exp(this.mass / 50))) * this.age * this.velocity.mag()) / 100;
@@ -628,7 +646,7 @@ class Tribe {
             this.food = 0;
             this.water = 0;
             this.dead = true;
-			// this.trigger('death');
+			this.trigger('killed', this);
         }
 
         // grow older
@@ -658,7 +676,6 @@ class Tribe {
 // draw behaviour flag
 Tribe.showBehavior = false;
 
-Tribe.random = Math.random();
+// Tribe.random = Math.random();
 
-// Inherit Concert event manager
 require('underscore').extend(Tribe.prototype, require('concert'));

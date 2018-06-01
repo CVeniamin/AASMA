@@ -1,46 +1,104 @@
 <!DOCTYPE html>
+<!--suppress ALL -->
 <html>
 	<head>
-		<% include ../partials/header.ejs %>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Bedouin - Autonomous agents in Javascript</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="css/fontello.css">
+        <link rel="stylesheet" href="css/index.css">
 	</head>
 	<body>
         <div class="container-fluid mt-3">
             <div class="row">
                 <div class="col-lg-2">
-                    <button type="reset" class="btn btn-secondary" id="restart">Restart</button>
-                    <p>Number of Tribes: <span id="populationSize"></span></p>
-                    <div class="slidecontainer">
-                        <input id="population" class="slider" type="range" min="0" max="40" value="20" />
+                    <div class="mb-3">
+                        <button type="reset" class="btn btn-secondary icon-play" id="run"> Run</button>
+                        <button type="reset" class="btn btn-secondary icon-pause" id="pause"> Pause</button>
+                        <button type="reset" class="btn btn-secondary icon-cw" id="stop"> Reset</button>
                     </div>
-                    <div class="form-check">
+
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">Seed</div>
+                        </div>
+                        <input id="seed" class="form-control" type="text" placeholder="Seed value"/>
+                        <div class="input-group-append">
+                            <button class="btn btn icon-cw" id="newSeed"></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-1">Speed Multiplier: <span id="speedValue"></span></div>
+                        <input id="speed" class="form-control-range" type="range" min="1" max="50" value="1" step="1" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-1">Number of Tribes: <span id="populationSize"></span></div>
+                        <input id="population" class="form-control-range" type="range" min="0" max="40" value="25" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-1">Resources Ratio: <span id="resourcesR"></span></div>
+                        <input id="resourcesRatio" class="form-control-range" type="range" min="0" max="1" value="0.2" step="0.1" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-1">Look Area: <span id="lookA"></span></div>
+                        <input id="lookArea" class="form-control-range" type="range" min="20" max="120" value="60" step="10" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="mb-1">Influence Area: <span id="influenceA"></span></div>
+                        <input id="influenceArea" class="form-control-range" type="range" min="20" max="200" value="90" step="10" />
+                    </div>
+
+                    <div class="form-check mb-2">
                         <input type="checkbox" class="form-check-input" id="raiding">
                         <label class="form-check-label" for="raiding">Enable Raiding/Ghazzu</label>
                     </div>
-                    <div class="form-check">
+
+                    <div class="form-check mb-2">
                         <input type="checkbox" class="form-check-input" id="trading">
                         <label class="form-check-label" for="trading">Enable Trading</label>
                     </div>
-                    <div class="form-check">
+
+                    <div class="form-check mb-2">
                         <input type="checkbox" class="form-check-input" id="caravansEnabled">
                         <label class="form-check-label" for="caravansEnabled">Enable Caravans</label>
                     </div>
-                    <p>Resources Ratio: <span id="resourcesR"></span></p>
-                    <div class="slidecontainer">
-                        <input id="resourcesRatio" class="slider" type="range" min="0" max="1" value="0.2" step="0.1" />
-                    </div>
-                    <div class="slidecontainer">
-                        <p>Look Area: <span id="lookA"></span></p>
-                        <input id="lookArea" class="slider" type="range" min="20" max="120" value="60" step="10" />
-                    </div>
-                    <div class="slidecontainer">
-                        <p>Influence Area: <span id="influenceA"></span></p>
-                        <!-- <input type="range" min="1" max="50" value="20" class="slider" id="population"> -->
-                        <input id="influenceArea" class="slider" type="range" min="20" max="200" value="90" step="10" />
+
+                    <div class="mt-5">
+                        <h5 class="mb-2">Leaderboard</h5>
+                        <button type="reset" class="btn btn-outline-secondary" id="reset_table">Clear</button>
+                        <button type="reset" class="btn btn-outline-secondary" id="expand_table">Expand</button>
+                        <button type="reset" class="btn btn-outline-secondary" id="collapse_table">Collapse</button>
                     </div>
                 </div>
                 <div class="col-lg-3">
-					<span>Real-time statistics go here</span>
-                    <canvas id="statistics"></canvas>
+                    <canvas id="graph_resources" class="d-block mb-3"></canvas>
+                    <canvas id="graph_tribes" class="d-block mb-3"></canvas>
+                    <table id="table_tribes" class="table table-hover d-block">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Color</th>
+                                <th>Max Friends</th>
+                                <th>Max Enemies</th>
+                                <th>Survival Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            <tr data-dead="0" data-uncompensate="0">
+                                <th class="id">0</th>
+                                <th class="empty color" data-color="">&nbsp;</th>
+                                <th class="friends">0</th>
+                                <th class="enemies">0</th>
+                                <th class="time timestamp" data-timestamp=""></th>
+                            </tr>
+                        </tbody>
+                    </table>
 				</div>
                 <div class="col-lg-7 text-center">
                     <span id="footer">click on gameboard to <b>enter</b>  debugging</span>
@@ -53,18 +111,17 @@
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js" integrity="sha256-XF29CBwU1MWLaGEnsELogU6Y6rcc5nCkhhx89nFMIDQ=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js" integrity="sha256-YqOIp4MygNx9/lcWr5lpcR88Ki/MNMWvJJkH0eK+fHM=" crossorigin="anonymous"></script>
         <!-- Browserify bundle -->
 		<script src="js/bundle.js"></script>
 
         <!-- Custom JavaScript -->
         <script src="js/init.js"></script>
-        <script src="js/Vector.js"></script>
-        <script src="js/Water.js"></script>
-        <script src="js/Food.js"></script>
-        <script src="js/Silver.js"></script>
-        <script src="js/Tribe.js"></script>
-        <script src="js/Desert.js"></script>
         <script src="js/utils.js"></script>
+        <script src="js/resources.js"></script>
+        <script src="js/Tribe.js"></script>
+        <script src="js/app.js"></script>
+        <script src="js/graphs.js"></script>
     </body>
 </html>

@@ -2,3 +2,24 @@
     float: none;
     margin: 0 auto;
 }
+
+#graph_resources {
+    float: none;
+    width: calc(100% - 54px) !important;
+    height: 225px !important;
+}
+
+#graph_tribes {
+    float: none;
+    margin: 0 auto;
+    width: 100%;
+}
+
+th {
+    font-weight: normal;
+}
+
+th.time:after,
+td.time:after {
+    content: 's';
+}
