@@ -18,5 +18,3 @@ Your app should now be running on [localhost:5000](http://localhost:5000/) or fi
 $ git push heroku master
 $ heroku open
 ```
-
-Project report [https://www.overleaf.com/16338922vgbqwvkbmxnz](https://www.overleaf.com/16338922vgbqwvkbmxnz)
