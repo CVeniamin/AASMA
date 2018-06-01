@@ -23,9 +23,7 @@ class Resource {
     update(world) {}
 
     // tribe gathers Water
-    collectedBy(tribe) {
-        this.trigger('collected', tribe.gather);
-    }
+    collectedBy(tribe) {}
 }
 require('underscore').extend(Resource.prototype, require('concert'));
 
@@ -77,14 +75,18 @@ class Food extends Resource {
 
     // tribe gathers food
     collectedBy(tribe) {
-	    if (this.quantity < tribe.gather) {
-		    tribe.food += this.quantity;
-		    this.quantity = 0;
-	    } else {
-		    tribe.food += tribe.gather;
-		    this.quantity -= tribe.gather;
-	    }
-        this.trigger('collected', tribe.gather);
+        var gatherAmount = Math.min(this.quantity, tribe.gather);
+	    if (gatherAmount <= 0) {
+            return;
+        }
+
+        tribe.food += gatherAmount;
+        this.quantity -= gatherAmount;
+        this.trigger('collected', gatherAmount);
+
+        if (this.quantity === 0) {
+            this.collected = true;
+        }
     }
 }
 
@@ -135,14 +137,18 @@ class Silver extends Resource {
     }
 
     collectedBy(tribe) {
-	    if (this.quantity < tribe.gather) {
-		    tribe.silver += this.quantity;
-		    this.quantity = 0;
-	    } else {
-		    tribe.silver += tribe.gather;
-		    this.quantity -= tribe.gather;
-	    }
-        this.trigger('collected', tribe.gather);
+        var gatherAmount = Math.min(this.quantity, tribe.gather);
+        if (gatherAmount <= 0) {
+            return;
+        }
+
+        tribe.silver += gatherAmount;
+        this.quantity -= gatherAmount;
+        this.trigger('collected', gatherAmount);
+
+        if (this.quantity === 0) {
+            this.collected = true;
+        }
     }
 }
 
@@ -191,13 +197,17 @@ class Water extends Resource {
 
     // tribe gathers Water
     collectedBy(tribe) {
-	    if (this.quantity < tribe.gather) {
-		    tribe.water += this.quantity;
-		    this.quantity = 0;
-	    } else {
-		    tribe.water += tribe.gather;
-		    this.quantity -= tribe.gather;
-	    }
-        this.trigger('collected', tribe.gather);
+        var gatherAmount = Math.min(this.quantity, tribe.gather);
+        if (gatherAmount <= 0) {
+            return;
+        }
+
+        tribe.water += gatherAmount;
+        this.quantity -= gatherAmount;
+        this.trigger('collected', gatherAmount);
+
+        if (this.quantity === 0) {
+            this.collected = true;
+        }
     }
 }

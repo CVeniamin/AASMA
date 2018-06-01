@@ -670,7 +670,10 @@ class Tribe {
     var id = 0;
     Tribe.uid = function() {
         return id++;
-    }
+    };
+    Tribe.uidReset = function() {
+        id = 0;
+    };
 })();
 
 // draw behaviour flag

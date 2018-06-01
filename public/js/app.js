@@ -292,10 +292,12 @@ $(function() {
         pauseGameLoop();
 
         Math.setRandomSeed($('#seed').val());
+        Tribe.uidReset();
 
         desert.food = [];
         desert.silver = [];
         desert.water = [];
+
         desert.population.forEach(function(tribe) {
             tribe.trigger('deleted', tribe);
         });

@@ -75,18 +75,26 @@
                         radius: 0
                     }
                 },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
                 scales: {
                     xAxes: [{
                         type: 'time',
                         time: {
 	                        displayFormats: {
-		                        millisecond: 'ss',
-		                        second: 'ss',
-		                        minute: 'mm:ss',
-		                        hour: 'mm:ss',
-		                        day: 'mm:ss',
-		                        week: 'mm:ss',
-		                        year: 'mm:ss',
+		                        millisecond: 's',
+		                        second: 's',
+		                        minute: 'mm:s',
+		                        hour: 'mm:s',
+		                        day: 'mm:s',
+		                        week: 'mm:s',
+		                        year: 'mm:s',
 	                        }
                         },
                         scaleLabel: {
@@ -202,18 +210,26 @@
                         radius: 0
                     }
                 },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
                 scales: {
                     xAxes: [{
                         type: 'time',
                         time: {
 	                        displayFormats: {
-		                        millisecond: 'ss',
-		                        second: 'ss',
-		                        minute: 'mm:ss',
-		                        hour: 'mm:ss',
-		                        day: 'mm:ss',
-		                        week: 'mm:ss',
-		                        year: 'mm:ss',
+		                        millisecond: 's',
+		                        second: 's',
+		                        minute: 'mm:s',
+		                        hour: 'mm:s',
+		                        day: 'mm:s',
+		                        week: 'mm:s',
+		                        year: 'mm:s',
 	                        }
                         },
                         scaleLabel: {
@@ -299,7 +315,7 @@
 
     var tribeList = new List('table_tribes', {
         valueNames: ['id', 'empty', {name: 'color', attr: 'data-color'}, 'friends', 'enemies', 'time', {name: 'timestamp', attr: 'data-timestamp'}, {data: ['dead']}, {data: ['uncompensate']}],
-        page: 5,
+        page: 10,
     });
     tribeList.clear();
     var sortList = function() {
@@ -392,7 +408,7 @@
         });
     });
     $('#collapse_table').on('click', function() {
-        tribeList.show(0, 5);
+        tribeList.show(0, 10);
     });
 
     window.logaa = false;
