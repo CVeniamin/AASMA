@@ -79,11 +79,15 @@
                     xAxes: [{
                         type: 'time',
                         time: {
-                            displayFormats: {
-                                millisecond: 'ss',
-                                second: 'ss',
-                                minute: 'mm:ss'
-                            }
+	                        displayFormats: {
+		                        millisecond: 'ss',
+		                        second: 'ss',
+		                        minute: 'mm:ss',
+		                        hour: 'mm:ss',
+		                        day: 'mm:ss',
+		                        week: 'mm:ss',
+		                        year: 'mm:ss',
+	                        }
                         },
                         scaleLabel: {
                             display: false
@@ -202,11 +206,15 @@
                     xAxes: [{
                         type: 'time',
                         time: {
-                            displayFormats: {
-                                millisecond: 'ss',
-                                second: 'ss',
-                                minute: 'mm:ss'
-                            }
+	                        displayFormats: {
+		                        millisecond: 'ss',
+		                        second: 'ss',
+		                        minute: 'mm:ss',
+		                        hour: 'mm:ss',
+		                        day: 'mm:ss',
+		                        week: 'mm:ss',
+		                        year: 'mm:ss',
+	                        }
                         },
                         scaleLabel: {
                             display: false

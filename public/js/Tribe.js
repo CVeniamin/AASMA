@@ -250,7 +250,7 @@ class Tribe {
 	    this.applyForce(cohesion);
         this.trade(TribeList, function(tribe) {
             var trade = 1 / 100;
-            // "fake" trade of food with water
+            // trade of food with water
             if (that.food < tribe.food && that.water > tribe.water) {
                 // water more valuable
 	            that.food += trade * 5;

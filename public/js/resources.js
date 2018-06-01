@@ -49,7 +49,7 @@ class Food extends Resource {
         ctx.font = '14px Verdana';
         ctx.fillStyle = "#000000";
         ctx.globalAlpha = this.quantity > 0 ? .5 : this.radius / 100;
-        ctx.fillText("FOOD", this.location.x - 20, this.location.y + 5);
+        ctx.fillText("Food", this.location.x - 20, this.location.y + 5);
         ctx.globalAlpha = old;
     }
 
@@ -77,8 +77,13 @@ class Food extends Resource {
 
     // tribe gathers food
     collectedBy(tribe) {
-        this.quantity -= tribe.gather;
-        tribe.food += tribe.gather;
+	    if (this.quantity < tribe.gather) {
+		    tribe.food += this.quantity;
+		    this.quantity = 0;
+	    } else {
+		    tribe.food += tribe.gather;
+		    this.quantity -= tribe.gather;
+	    }
         this.trigger('collected', tribe.gather);
     }
 }
@@ -130,8 +135,13 @@ class Silver extends Resource {
     }
 
     collectedBy(tribe) {
-        this.quantity -= tribe.gather;
-        tribe.silver += tribe.gather;
+	    if (this.quantity < tribe.gather) {
+		    tribe.silver += this.quantity;
+		    this.quantity = 0;
+	    } else {
+		    tribe.silver += tribe.gather;
+		    this.quantity -= tribe.gather;
+	    }
         this.trigger('collected', tribe.gather);
     }
 }
@@ -181,8 +191,13 @@ class Water extends Resource {
 
     // tribe gathers Water
     collectedBy(tribe) {
-        this.quantity -= tribe.gather;
-        tribe.water += tribe.gather;
+	    if (this.quantity < tribe.gather) {
+		    tribe.water += this.quantity;
+		    this.quantity = 0;
+	    } else {
+		    tribe.water += tribe.gather;
+		    this.quantity -= tribe.gather;
+	    }
         this.trigger('collected', tribe.gather);
     }
 }
