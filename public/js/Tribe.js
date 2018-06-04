@@ -90,7 +90,7 @@ class Tribe {
         // simulate raiding/ghazzu behavior
         if(desert.ghazzu){
 
-            // find nearby Tribes that are bigger than the this Tribe
+            // find nearby Tribes that are bigger than this Tribe
             var strong = [];
             for (var j in neighbors) {
                 if (neighbors[j].mass > this.mass * 2){
@@ -100,10 +100,10 @@ class Tribe {
 
             // if any, defend from them
             if (strong.length){
-                this.defend(strong, this.lookRange);
+                this.defend(strong, this.influenceRange);
             }
 
-            // find nearby Tribe that are smaller than the this Tribe and of different hue
+            // find nearby Tribe that are smaller than this Tribe and of different hue
             var weak = [];
             for (var j in neighbors) {
 	            var neighbor = neighbors[j];
@@ -362,7 +362,7 @@ class Tribe {
 
         for (var i in TribeList) {
             this.applyForce(TribeList[i].attract(this, force || 50));
-            if (this.location.dist(TribeList[i].location) < this.lookRange){
+            if (this.location.dist(TribeList[i].location) < this.influenceRange){
 	            action(TribeList[i]); // <- execute action when reaching a Tribe
             }
         }
